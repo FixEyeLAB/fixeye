@@ -547,7 +547,6 @@
             window.onCaptchaSuccess = function(token) {
                 console.log('Captcha success');
                 captchaStatus.textContent = '✓ проверка пройдена';
-                
                 setTimeout(() => {
                     captchaScreen.style.display = 'none';
                     chatPanel.style.display = 'flex';
@@ -607,6 +606,7 @@
             async function askAI(userText) {
                 showTyping();
                 try {
+                    // Используем проверенную бесплатную модель Gemini 2.0 Flash
                     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
                         method: "POST",
                         headers: {
@@ -616,7 +616,7 @@
                             "X-Title": "FixEye"
                         },
                         body: JSON.stringify({
-                            model: "google/gemini-3.1-pro:free", // Вот теперь точно 3.1 Pro!
+                            model: "google/gemini-2.0-flash-exp:free",
                             messages: [
                                 { role: "system", content: "Ты FixEye AI. Отвечай кратко и по делу." },
                                 { role: "user", content: userText }
@@ -625,7 +625,30 @@
                     });
 
                     if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}`);
+                        // Пробуем запасную модель
+                        console.warn('Gemini не отвечает, пробуем Llama');
+                        const fallbackResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                            method: "POST",
+                            headers: {
+                                "Authorization": `Bearer ${API_KEY}`,
+                                "Content-Type": "application/json",
+                                "HTTP-Referer": "https://fixeyelab.github.io/fixeye",
+                                "X-Title": "FixEye"
+                            },
+                            body: JSON.stringify({
+                                model: "meta-llama/llama-3.2-3b-instruct:free",
+                                messages: [
+                                    { role: "system", content: "Ты FixEye AI. Отвечай кратко." },
+                                    { role: "user", content: userText }
+                                ]
+                            })
+                        });
+                        if (!fallbackResponse.ok) throw new Error(`Запасная модель не работает: ${fallbackResponse.status}`);
+                        const fallbackData = await fallbackResponse.json();
+                        hideTyping();
+                        const fallbackReply = fallbackData.choices?.[0]?.message?.content || "...";
+                        addAssistantMessage(fallbackReply);
+                        return;
                     }
                     
                     const data = await response.json();
@@ -641,8 +664,8 @@
                     addAssistantMessage(reply);
                 } catch (error) {
                     hideTyping();
-                    addAssistantMessage("...");
-                    console.error(error);
+                    addAssistantMessage("... (ошибка связи)");
+                    console.error('AI Error:', error);
                 }
             }
 
