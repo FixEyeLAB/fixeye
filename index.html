@@ -4,15 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <title>FixEye</title>
+    <!-- Фавикон с сайта мерча -->
+    <link rel="icon" href="https://fixeye.shop/favicon.ico" type="image/x-icon">
+    <link rel="shortcut icon" href="https://fixeye.shop/favicon.ico" type="image/x-icon">
     <!-- Turnstile API -->
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             min-height: 100vh;
@@ -21,9 +19,8 @@
             position: relative;
             background: #0a0a0f;
             color: #f0f0f0;
+            transition: border-color 0.3s, background 0.3s;
         }
-
-        /* ПИКСЕЛЬНЫЙ ФОН */
         body::before {
             content: "";
             position: fixed;
@@ -42,7 +39,6 @@
             z-index: -2;
             pointer-events: none;
         }
-
         body::after {
             content: "";
             position: fixed;
@@ -58,7 +54,6 @@
             pointer-events: none;
             mix-blend-mode: overlay;
         }
-
         .header {
             background: rgba(25, 20, 30, 0.7);
             backdrop-filter: blur(15px);
@@ -68,42 +63,78 @@
             padding: 16px 24px;
             display: flex;
             align-items: center;
-            gap: 16px;
-            border: 2px solid #3b8cff;
+            gap: 12px;
+            border: 2px solid var(--accent-color, #3b8cff);
             box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+            flex-wrap: nowrap;
         }
-
         .logo {
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 12px;
+            flex-shrink: 0;
         }
-
         .logo-icon {
-            width: 52px;
-            height: 52px;
-            border-radius: 18px;
-            background: linear-gradient(145deg, #3b8cff, #8fb0ff);
+            width: 46px;
+            height: 46px;
+            border-radius: 14px;
+            background: #1a1a2a;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 30px;
-            box-shadow: 0 6px 20px rgba(59, 140, 255, 0.5);
+            overflow: hidden;
+            border: 2px solid var(--accent-color, #3b8cff);
+            transform: translateY(2px);
+            flex-shrink: 0;
         }
-
+        .logo-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
         .logo-text h1 {
             font-size: 28px;
             font-weight: 600;
-            background: linear-gradient(135deg, #8fb0ff, #3b8cff);
+            background: linear-gradient(135deg, var(--accent-light, #8fb0ff), var(--accent-color, #3b8cff));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            white-space: nowrap;
         }
-
         .logo-text p {
             font-size: 13px;
             color: #b0b0b0;
+            white-space: nowrap;
         }
-
+        .header-controls {
+            display: flex;
+            gap: 8px;
+            margin-left: auto;
+            flex-shrink: 0;
+        }
+        .theme-toggle, .sound-toggle, .info-toggle {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid var(--accent-color, #3b8cff);
+            color: var(--accent-color, #3b8cff);
+            height: 44px;
+            border-radius: 30px;
+            font-size: 20px;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            padding: 0 12px;
+            gap: 4px;
+        }
+        .theme-toggle:hover, .sound-toggle:hover, .info-toggle:hover {
+            background: var(--accent-color, #3b8cff);
+            color: white;
+        }
+        .info-toggle .info-text {
+            font-size: 16px;
+        }
         .main-container {
             flex: 1;
             padding: 0 20px 20px 20px;
@@ -113,13 +144,12 @@
             margin: 0 auto;
             width: 100%;
         }
-
         .captcha-screen {
             background: rgba(25, 20, 30, 0.6);
             backdrop-filter: blur(15px);
             -webkit-backdrop-filter: blur(15px);
             border-radius: 25px;
-            border: 2px solid #3b8cff;
+            border: 2px solid var(--accent-color, #3b8cff);
             padding: 30px 20px;
             box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
             display: flex;
@@ -131,16 +161,14 @@
             margin-bottom: 20px;
             width: 100%;
         }
-
         .captcha-title {
             font-size: clamp(24px, 6vw, 32px);
             font-weight: 500;
             margin-bottom: 15px;
-            background: linear-gradient(135deg, #3b8cff, #8fb0ff);
+            background: linear-gradient(135deg, var(--accent-color, #3b8cff), var(--accent-light, #8fb0ff));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-
         .captcha-description {
             color: #b0b0b0;
             margin-bottom: 25px;
@@ -149,12 +177,11 @@
             font-size: clamp(14px, 4vw, 16px);
             padding: 0 10px;
         }
-
         .captcha-box {
             background: rgba(15, 10, 20, 0.6);
             border-radius: 20px;
             padding: 20px 15px;
-            border: 2px solid rgba(59, 140, 255, 0.5);
+            border: 2px solid var(--accent-color, #3b8cff);
             width: 100%;
             max-width: 450px;
             display: flex;
@@ -162,42 +189,34 @@
             align-items: center;
             box-shadow: inset 0 0 20px rgba(59, 140, 255, 0.1);
         }
-
         .cf-turnstile {
             margin: 5px 0;
             width: 100%;
             display: flex;
             justify-content: center;
         }
-
-        .cf-turnstile iframe {
-            max-width: 100%;
-        }
-
+        .cf-turnstile iframe { max-width: 100%; }
         .status-message {
             margin-top: 15px;
-            color: #3b8cff;
+            color: var(--accent-color, #3b8cff);
             font-size: 14px;
             min-height: 20px;
         }
-
         .captcha-footer {
             margin-top: 25px;
             font-size: 14px;
             color: #6b6b6b;
-            letter-spacing: 1px;
-            border-top: 1px solid rgba(59, 140, 255, 0.2);
+            border-top: 1px solid var(--accent-color, #3b8cff);
             padding-top: 15px;
             width: 100%;
             text-align: center;
         }
-
         .chat-panel {
             background: rgba(25, 20, 30, 0.6);
             backdrop-filter: blur(15px);
             -webkit-backdrop-filter: blur(15px);
             border-radius: 25px;
-            border: 2px solid #3b8cff;
+            border: 2px solid var(--accent-color, #3b8cff);
             padding: 20px;
             box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
             display: flex;
@@ -207,7 +226,6 @@
             display: none;
             width: 100%;
         }
-
         .chat-window {
             flex: 1;
             overflow-y: auto;
@@ -217,278 +235,217 @@
             padding: 8px 8px 20px 8px;
             scroll-behavior: smooth;
         }
-
         .message {
             display: flex;
             gap: 12px;
             max-width: 85%;
             animation: messageAppear 0.3s ease;
         }
-
-        .message-right {
-            align-self: flex-end;
-            flex-direction: row-reverse;
-        }
-
+        .message-right { align-self: flex-end; flex-direction: row-reverse; }
         @keyframes messageAppear {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-
         .avatar {
-            width: 44px;
-            height: 44px;
-            border-radius: 14px;
+            width: 44px; height: 44px; border-radius: 14px;
             background: rgba(40, 35, 45, 0.9);
             backdrop-filter: blur(5px);
-            border: 2px solid #3b8cff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 22px;
-            flex-shrink: 0;
-            color: #8fb0ff;
+            border: 2px solid var(--accent-color, #3b8cff);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px; flex-shrink: 0; color: var(--accent-light, #8fb0ff);
         }
-
         .avatar-user {
             background: linear-gradient(145deg, #ff5f5f, #ff8f8f);
-            border-color: #ff8f8f;
-            color: white;
+            border-color: #ff8f8f; color: white;
         }
-
         .bubble {
-            padding: 14px 20px;
-            border-radius: 20px;
+            padding: 14px 20px; border-radius: 20px;
             background: rgba(35, 30, 40, 0.9);
             backdrop-filter: blur(5px);
-            border: 1px solid rgba(59, 140, 255, 0.3);
-            color: #f0f0f0;
-            font-size: 15px;
-            line-height: 1.5;
+            border: 1px solid var(--accent-color, #3b8cff);
+            color: #f0f0f0; font-size: 15px; line-height: 1.5;
             word-break: break-word;
         }
-
         .bubble-user {
             background: rgba(255, 95, 95, 0.25);
             border: 1px solid rgba(255, 140, 140, 0.3);
         }
-
         .typing-indicator {
-            display: flex;
-            gap: 8px;
-            padding: 16px 24px;
+            display: flex; gap: 8px; padding: 16px 24px;
             background: rgba(35, 30, 40, 0.8);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            width: fit-content;
-            border: 1px solid rgba(59, 140, 255, 0.3);
+            backdrop-filter: blur(10px); border-radius: 20px;
+            width: fit-content; border: 1px solid var(--accent-color, #3b8cff);
         }
-
         .typing-dot {
-            width: 10px;
-            height: 10px;
-            background: #3b8cff;
-            border-radius: 4px;
-            animation: typingPulse 1.4s infinite;
+            width: 10px; height: 10px; background: var(--accent-color, #3b8cff);
+            border-radius: 4px; animation: typingPulse 1.4s infinite;
         }
-
-        .typing-dot:nth-child(2) {
-            background: #5f9eff;
-            animation-delay: 0.2s;
-        }
-
-        .typing-dot:nth-child(3) {
-            background: #8fb0ff;
-            animation-delay: 0.4s;
-        }
-
+        .typing-dot:nth-child(2) { background: var(--accent-light, #5f9eff); animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { background: var(--accent-light, #8fb0ff); animation-delay: 0.4s; }
         @keyframes typingPulse {
             0%, 60%, 100% { opacity: 0.4; transform: scale(0.9); }
             30% { opacity: 1; transform: scale(1.2); }
         }
-
         .input-area {
-            display: flex;
-            gap: 12px;
-            margin-top: 16px;
+            display: flex; gap: 12px; margin-top: 16px;
             background: rgba(25, 20, 30, 0.7);
             backdrop-filter: blur(15px);
             -webkit-backdrop-filter: blur(15px);
-            border-radius: 20px;
-            padding: 6px 6px 6px 20px;
-            border: 2px solid #3b8cff;
+            border-radius: 20px; padding: 6px 6px 6px 20px;
+            border: 2px solid var(--accent-color, #3b8cff);
         }
-
         .input-area textarea {
-            flex: 1;
-            background: transparent;
-            border: none;
-            outline: none;
-            color: white;
-            font-family: 'Inter', sans-serif;
-            font-size: 16px;
-            padding: 14px 0;
-            resize: none;
-            max-height: 120px;
+            flex: 1; background: transparent; border: none; outline: none;
+            color: white; font-family: 'Inter', sans-serif; font-size: 16px;
+            padding: 14px 0; resize: none; max-height: 120px;
         }
-
-        .input-area textarea::placeholder {
-            color: #888;
-        }
-
+        .input-area textarea::placeholder { color: #888; }
         .send-button {
-            width: 56px;
-            height: 56px;
-            border-radius: 16px;
-            background: #3b8cff;
-            border: none;
+            width: 56px; height: 56px; border-radius: 16px;
+            background: var(--accent-color, #3b8cff);
+            border: none; color: white;
+            font-size: 24px; cursor: pointer; transition: 0.2s;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 15px var(--accent-color, #3b8cff);
+        }
+        .send-button:hover { background: var(--accent-light, #5f9eff); transform: scale(1.02); }
+        .send-button:active { transform: scale(0.98); }
+        .tg-button-container {
+            display: flex; justify-content: center; margin-top: 20px; margin-bottom: 5px;
+        }
+        .tg-button {
+            display: inline-flex; align-items: center; gap: 10px;
+            background: var(--accent-color, #3b8cff);
+            color: white; text-decoration: none;
+            font-size: 16px; font-weight: 500; padding: 14px 30px;
+            border-radius: 30px; border: 2px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 20px var(--accent-color, #3b8cff);
+            transition: 0.2s; backdrop-filter: blur(5px);
+        }
+        .tg-button:hover {
+            background: var(--accent-light, #5f9eff);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px var(--accent-color, #3b8cff);
+        }
+        .tg-button:active { transform: translateY(0); }
+        .tg-button span { font-size: 24px; line-height: 1; }
+        .game-container {
+            margin-top: 20px;
+            background: rgba(25, 20, 30, 0.6);
+            backdrop-filter: blur(15px);
+            border-radius: 25px;
+            border: 2px solid var(--accent-color, #3b8cff);
+            padding: 20px;
+        }
+        .game-title {
+            font-size: 20px;
+            margin-bottom: 15px;
+            color: var(--accent-color, #3b8cff);
+        }
+        .game-input-area {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .game-input {
+            flex: 1;
+            background: rgba(15, 10, 20, 0.7);
+            border: 2px solid var(--accent-color, #3b8cff);
+            border-radius: 15px;
+            padding: 12px 16px;
             color: white;
-            font-size: 24px;
+            font-size: 16px;
+            outline: none;
+        }
+        .game-button {
+            background: var(--accent-color, #3b8cff);
+            border: none;
+            border-radius: 15px;
+            padding: 0 25px;
+            color: white;
+            font-size: 16px;
             cursor: pointer;
             transition: 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 15px rgba(59, 140, 255, 0.5);
         }
-
-        .send-button:hover {
-            background: #5f9eff;
-            transform: scale(1.02);
+        .game-button:hover {
+            background: var(--accent-light, #5f9eff);
         }
-
-        .send-button:active {
-            transform: scale(0.98);
+        .game-hint {
+            color: #b0b0b0;
+            font-size: 14px;
+            min-height: 20px;
         }
-
-        .tg-button-container {
-            display: flex;
-            justify-content: center;
-            margin-top: 20px;
-            margin-bottom: 5px;
-        }
-
-        .tg-button {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            background: #3b8cff;
-            color: white;
-            text-decoration: none;
-            font-size: 16px;
-            font-weight: 500;
-            padding: 14px 30px;
-            border-radius: 30px;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 4px 20px rgba(59, 140, 255, 0.4);
-            transition: 0.2s;
-            backdrop-filter: blur(5px);
-        }
-
-        .tg-button:hover {
-            background: #5f9eff;
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(59, 140, 255, 0.6);
-        }
-
-        .tg-button:active {
-            transform: translateY(0);
-        }
-
-        .tg-button span {
-            font-size: 24px;
-            line-height: 1;
-        }
-
         .footer {
-            text-align: center;
-            padding: 16px;
-            color: #8fb0ff;
-            font-size: 13px;
-            border-top: 1px solid rgba(59, 140, 255, 0.2);
+            text-align: center; padding: 16px; color: #8fb0ff;
+            font-size: 13px; border-top: 1px solid var(--accent-color, #3b8cff);
             margin-top: 10px;
         }
-
-        .chat-window::-webkit-scrollbar {
-            width: 6px;
-        }
-
+        .chat-window::-webkit-scrollbar { width: 6px; }
         .chat-window::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.05); border-radius: 10px;
         }
-
         .chat-window::-webkit-scrollbar-thumb {
-            background: #3b8cff;
-            border-radius: 10px;
+            background: var(--accent-color, #3b8cff); border-radius: 10px;
         }
-
         @media (max-width: 600px) {
             .header {
                 margin: 12px;
-                padding: 12px 18px;
+                padding: 12px 16px;
+                gap: 8px;
             }
-
             .logo-icon {
-                width: 44px;
-                height: 44px;
-                font-size: 24px;
+                width: 40px;
+                height: 40px;
+                transform: translateY(1px);
             }
-
             .logo-text h1 {
                 font-size: 22px;
             }
-
-            .captcha-screen {
-                padding: 25px 15px;
-                min-height: 300px;
+            .logo-text p {
+                font-size: 11px;
             }
-
-            .captcha-box {
-                padding: 15px 10px;
-                max-width: 100%;
+            .theme-toggle, .sound-toggle, .info-toggle {
+                width: 40px;
+                height: 40px;
+                padding: 0;
+                font-size: 20px;
             }
-
-            .chat-panel {
-                padding: 16px;
-                height: calc(90vh - 120px);
+            .info-toggle .info-text {
+                display: none;
             }
-
-            .message {
-                max-width: 90%;
-            }
-
-            .avatar {
-                width: 38px;
-                height: 38px;
-                font-size: 18px;
-            }
-
-            .bubble {
-                padding: 12px 16px;
-                font-size: 14px;
-            }
-
-            .tg-button {
-                padding: 12px 24px;
-                font-size: 14px;
-            }
+            .captcha-screen { padding: 25px 15px; min-height: 300px; }
+            .captcha-box { padding: 15px 10px; max-width: 100%; }
+            .chat-panel { padding: 16px; height: calc(90vh - 120px); }
+            .message { max-width: 90%; }
+            .avatar { width: 38px; height: 38px; font-size: 18px; }
+            .bubble { padding: 12px 16px; font-size: 14px; }
+            .tg-button { padding: 12px 24px; font-size: 14px; }
+            .game-input-area { flex-direction: column; }
+            .game-button { padding: 12px; }
         }
     </style>
 </head>
 <body>
     <header class="header">
         <div class="logo">
-            <div class="logo-icon">👁️</div>
+            <div class="logo-icon">
+                <img src="https://fixeye.shop/favicon.ico" alt="FixEye" onerror="this.style.display='none'; this.parentElement.innerHTML='👁️';">
+            </div>
             <div class="logo-text">
                 <h1>FIXEYE</h1>
                 <p>красный · синий</p>
             </div>
         </div>
+        <div class="header-controls">
+            <button class="theme-toggle" id="themeToggle">🎨</button>
+            <button class="sound-toggle" id="soundToggle">🔇</button>
+            <button class="info-toggle" id="infoToggle">
+                <span>ℹ️</span>
+                <span class="info-text"> инфо</span>
+            </button>
+        </div>
     </header>
-
     <main class="main-container">
-        <!-- Экран капчи -->
         <div id="captchaScreen" class="captcha-screen">
             <div class="captcha-title">проверка</div>
             <div class="captcha-description">
@@ -505,60 +462,258 @@
             </div>
             <div class="captcha-footer">MrStels • 2026</div>
         </div>
-
-        <!-- Чат -->
         <div id="chatPanel" class="chat-panel" style="display: none;">
             <div class="chat-window" id="chatWindow">
                 <div class="message">
                     <div class="avatar">👁️</div>
                     <div class="bubble">
-                        <strong style="color: #8fb0ff;">FixEye AI 3.1 Pro</strong><br>
+                        <strong style="color: var(--accent-light);">FixEye AI 3.1 Pro</strong><br>
                         Привет.
                     </div>
                 </div>
             </div>
-
             <div class="input-area">
                 <textarea id="userInput" placeholder="Сообщение..." rows="1"></textarea>
                 <button class="send-button" id="sendBtn">↵</button>
             </div>
-
             <div class="tg-button-container">
                 <a href="https://t.me/+KkWe78dYOOk4Zjgy" target="_blank" class="tg-button">
                     <span>✈️</span> Все модеры фиксая
                 </a>
             </div>
+            <!-- Мини-игра -->
+            <div class="game-container">
+                <div class="game-title">🎲 угадай число (1–10)</div>
+                <div class="game-input-area">
+                    <input type="number" id="gameInput" class="game-input" placeholder="твой вариант" min="1" max="10">
+                    <button class="game-button" id="gameBtn">проверить</button>
+                </div>
+                <div class="game-hint" id="gameHint">загадано число...</div>
+            </div>
         </div>
     </main>
-
-    <footer class="footer">
-        FixEye
-    </footer>
+    <footer class="footer">FixEye</footer>
 
     <script>
         (function() {
             const API_KEY = "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";
-            // Используем публичный CORS-прокси для обхода блокировки
-            const PROXY_URL = "https://corsproxy.io/?";
+            
+            // --- ПРОКСИ ---
+            const PROXY_URL = "https://thingproxy.freeboard.io/fetch/";
             const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
             
+            // --- ЭЛЕМЕНТЫ ---
             const captchaScreen = document.getElementById('captchaScreen');
             const chatPanel = document.getElementById('chatPanel');
             const chatWindow = document.getElementById('chatWindow');
             const userInput = document.getElementById('userInput');
             const sendBtn = document.getElementById('sendBtn');
             const captchaStatus = document.getElementById('captchaStatus');
+            const themeToggle = document.getElementById('themeToggle');
+            const soundToggle = document.getElementById('soundToggle');
+            const infoToggle = document.getElementById('infoToggle');
+            
+            // --- ИГРА ---
+            const gameInput = document.getElementById('gameInput');
+            const gameBtn = document.getElementById('gameBtn');
+            const gameHint = document.getElementById('gameHint');
+            let secretNumber = Math.floor(Math.random() * 10) + 1;
+            let gameActive = true;
 
-            window.onCaptchaSuccess = function(token) {
-                console.log('Captcha success');
-                captchaStatus.textContent = '✓ проверка пройдена';
+            // --- ЗВУКИ через Web Audio API ---
+            let audioCtx = null;
+            let soundEnabled = false;
+            
+            // Переменные для фоновой музыки
+            let backgroundMusic = null;
+            let musicGainNode = null;
+            let musicOscillators = [];
+
+            function initAudio() {
+                if (audioCtx) return;
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+
+            function stopBackgroundMusic() {
+                if (musicGainNode) {
+                    // Плавное затухание
+                    musicGainNode.gain.setValueAtTime(musicGainNode.gain.value, audioCtx.currentTime);
+                    musicGainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+                    setTimeout(() => {
+                        musicOscillators.forEach(osc => {
+                            try { osc.stop(); } catch(e) {}
+                        });
+                        musicOscillators = [];
+                        backgroundMusic = null;
+                    }, 500);
+                }
+            }
+
+            function startBackgroundMusic() {
+                if (!soundEnabled || !audioCtx) return;
                 
+                // Останавливаем предыдущую музыку
+                stopBackgroundMusic();
+                
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                
+                // Создаем узел громкости
+                musicGainNode = audioCtx.createGain();
+                musicGainNode.gain.setValueAtTime(0.15, audioCtx.currentTime); // Тихая, фоновая громкость
+                musicGainNode.connect(audioCtx.destination);
+                
+                // Создаем несколько осцилляторов для имитации пианино и эмбиента
+                
+                // 1. Основная мелодия (пианино) - похожа на начало "Sweden" и "Wet Hands"
+                const pianoOsc = audioCtx.createOscillator();
+                pianoOsc.type = 'triangle';
+                pianoOsc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // До (C5)
+                
+                const pianoGain = audioCtx.createGain();
+                pianoGain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                
+                pianoOsc.connect(pianoGain);
+                pianoGain.connect(musicGainNode);
+                
+                // 2. Бас-подложка (эмбиент)
+                const bassOsc = audioCtx.createOscillator();
+                bassOsc.type = 'sine';
+                bassOsc.frequency.setValueAtTime(130.81, audioCtx.currentTime); // До (C3)
+                
+                const bassGain = audioCtx.createGain();
+                bassGain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                
+                bassOsc.connect(bassGain);
+                bassGain.connect(musicGainNode);
+                
+                // 3. Вторая гармония (для объема)
+                const harmonyOsc = audioCtx.createOscillator();
+                harmonyOsc.type = 'sine';
+                harmonyOsc.frequency.setValueAtTime(261.63, audioCtx.currentTime); // До (C4)
+                
+                const harmonyGain = audioCtx.createGain();
+                harmonyGain.gain.setValueAtTime(0.06, audioCtx.currentTime);
+                
+                harmonyOsc.connect(harmonyGain);
+                harmonyGain.connect(musicGainNode);
+                
+                // Запоминаем осцилляторы
+                musicOscillators = [pianoOsc, bassOsc, harmonyOsc];
+                
+                // Запускаем
+                pianoOsc.start();
+                bassOsc.start();
+                harmonyOsc.start();
+                
+                // Мелодические изменения через 4 секунды
+                setTimeout(() => {
+                    if (!soundEnabled || !audioCtx) return;
+                    pianoOsc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // Ре (D5)
+                }, 4000);
+                
+                setTimeout(() => {
+                    if (!soundEnabled || !audioCtx) return;
+                    pianoOsc.frequency.setValueAtTime(659.25, audioCtx.currentTime); // Ми (E5)
+                }, 6000);
+                
+                setTimeout(() => {
+                    if (!soundEnabled || !audioCtx) return;
+                    pianoOsc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // Назад к До
+                }, 8000);
+                
+                // Циклические изменения (каждые 8 секунд повторяем паттерн)
+                setInterval(() => {
+                    if (!soundEnabled || !audioCtx) return;
+                    setTimeout(() => pianoOsc.frequency.setValueAtTime(587.33, audioCtx.currentTime), 0);
+                    setTimeout(() => pianoOsc.frequency.setValueAtTime(659.25, audioCtx.currentTime), 2000);
+                    setTimeout(() => pianoOsc.frequency.setValueAtTime(523.25, audioCtx.currentTime), 4000);
+                }, 8000);
+                
+                backgroundMusic = { pianoOsc, bassOsc, harmonyOsc };
+            }
+
+            function beep(freq = 800, duration = 0.1, vol = 0.2) {
+                if (!soundEnabled || !audioCtx) return;
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                oscillator.frequency.value = freq;
+                gainNode.gain.value = vol;
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + duration);
+            }
+
+            soundToggle.addEventListener('click', () => {
+                soundEnabled = !soundEnabled;
+                soundToggle.textContent = soundEnabled ? '🔊' : '🔇';
+                
+                if (soundEnabled) {
+                    initAudio();
+                    startBackgroundMusic();
+                    // тестовый звук
+                    beep(600, 0.15, 0.15);
+                } else {
+                    stopBackgroundMusic();
+                }
+            });
+
+            function playSendSound() {
+                beep(700, 0.08, 0.1);
+            }
+
+            function playWinSound() {
+                beep(1200, 0.2, 0.15);
+                beep(1500, 0.15, 0.15);
+            }
+
+            // --- ТЕМА ---
+            const root = document.documentElement;
+            let isRedTheme = localStorage.getItem('fixeye_theme') === 'red';
+
+            function setTheme(red) {
+                if (red) {
+                    root.style.setProperty('--accent-color', '#ff5f5f');
+                    root.style.setProperty('--accent-light', '#ff9f9f');
+                } else {
+                    root.style.setProperty('--accent-color', '#3b8cff');
+                    root.style.setProperty('--accent-light', '#8fb0ff');
+                }
+                localStorage.setItem('fixeye_theme', red ? 'red' : 'blue');
+            }
+            setTheme(isRedTheme);
+
+            themeToggle.addEventListener('click', () => {
+                isRedTheme = !isRedTheme;
+                setTheme(isRedTheme);
+            });
+
+            // --- ИНФО ---
+            infoToggle.addEventListener('click', () => {
+                alert('FixEye v1.0.0 (сборка 1010)');
+            });
+
+            // --- КАПЧА ---
+            window.onCaptchaSuccess = function(token) {
+                captchaStatus.textContent = '✓ проверка пройдена';
                 setTimeout(() => {
                     captchaScreen.style.display = 'none';
                     chatPanel.style.display = 'flex';
+                    // Новая игра
+                    secretNumber = Math.floor(Math.random() * 10) + 1;
+                    gameHint.textContent = 'загадано число (1–10)';
+                    gameActive = true;
+                    
+                    // Если звуки уже включены, фоновая музыка продолжит играть автоматически
                 }, 500);
             };
 
+            // --- ЧАТ ---
             function addUserMessage(text) {
                 const div = document.createElement('div');
                 div.className = 'message message-right';
@@ -568,6 +723,7 @@
                 `;
                 chatWindow.appendChild(div);
                 chatWindow.scrollTop = chatWindow.scrollHeight;
+                playSendSound();
             }
 
             function addAssistantMessage(text) {
@@ -576,7 +732,7 @@
                 div.innerHTML = `
                     <div class="avatar">👁️</div>
                     <div class="bubble">
-                        <strong style="color: #8fb0ff;">FixEye AI 3.1 Pro</strong><br>${text}
+                        <strong style="color: var(--accent-light);">FixEye AI 3.1 Pro</strong><br>${text}
                     </div>
                 `;
                 chatWindow.appendChild(div);
@@ -584,7 +740,6 @@
             }
 
             let typingIndicator = null;
-
             function showTyping() {
                 if (typingIndicator) return;
                 typingIndicator = document.createElement('div');
@@ -601,25 +756,23 @@
                 chatWindow.appendChild(typingIndicator);
                 chatWindow.scrollTop = chatWindow.scrollHeight;
             }
-
             function hideTyping() {
-                if (typingIndicator) {
-                    typingIndicator.remove();
-                    typingIndicator = null;
-                }
+                if (typingIndicator) typingIndicator.remove();
+                typingIndicator = null;
             }
 
             async function askAI(userText) {
                 showTyping();
                 try {
-                    const response = await fetch(PROXY_URL + OPENROUTER_URL, {
+                    let model = "google/gemini-2.0-flash-exp:free";
+                    let response = await fetch(PROXY_URL + OPENROUTER_URL, {
                         method: "POST",
                         headers: {
                             "Authorization": `Bearer ${API_KEY}`,
                             "Content-Type": "application/json"
                         },
                         body: JSON.stringify({
-                            model: "google/gemini-2.0-flash-exp:free",
+                            model: model,
                             messages: [
                                 { role: "system", content: "Ты FixEye AI. Отвечай кратко и по делу." },
                                 { role: "user", content: userText }
@@ -628,19 +781,30 @@
                     });
 
                     if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}`);
+                        console.warn("Gemini не отвечает, пробуем Llama");
+                        model = "meta-llama/llama-3.2-3b-instruct:free";
+                        response = await fetch(PROXY_URL + OPENROUTER_URL, {
+                            method: "POST",
+                            headers: {
+                                "Authorization": `Bearer ${API_KEY}`,
+                                "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify({
+                                model: model,
+                                messages: [
+                                    { role: "system", content: "Ты FixEye AI. Отвечай кратко." },
+                                    { role: "user", content: userText }
+                                ]
+                            })
+                        });
                     }
+
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
                     
                     const data = await response.json();
                     hideTyping();
                     
-                    let reply = "...";
-                    if (data.choices && data.choices[0] && data.choices[0].message) {
-                        reply = data.choices[0].message.content;
-                    } else if (data.error) {
-                        reply = `Ошибка: ${data.error.message}`;
-                    }
-                    
+                    let reply = data.choices?.[0]?.message?.content || "...";
                     addAssistantMessage(reply);
                 } catch (error) {
                     hideTyping();
@@ -663,10 +827,46 @@
                     sendBtn.click();
                 }
             });
-
             userInput.addEventListener('input', function() {
                 this.style.height = 'auto';
                 this.style.height = (this.scrollHeight) + 'px';
+            });
+
+            // --- ИГРА ---
+            gameBtn.addEventListener('click', () => {
+                if (!gameActive) {
+                    // начинаем новую игру
+                    secretNumber = Math.floor(Math.random() * 10) + 1;
+                    gameHint.textContent = 'загадано число (1–10)';
+                    gameActive = true;
+                    gameBtn.textContent = 'проверить';
+                    return;
+                }
+
+                const guess = parseInt(gameInput.value);
+                if (isNaN(guess) || guess < 1 || guess > 10) {
+                    gameHint.textContent = '⚠️ введи число от 1 до 10';
+                    return;
+                }
+
+                if (guess === secretNumber) {
+                    gameHint.textContent = '🎉 Угадал! Число было ' + secretNumber + '. Сыграем ещё?';
+                    gameActive = false;
+                    gameBtn.textContent = 'новая игра';
+                    playWinSound();
+                } else if (guess < secretNumber) {
+                    gameHint.textContent = '⬆️ больше';
+                } else {
+                    gameHint.textContent = '⬇️ меньше';
+                }
+                gameInput.value = '';
+            });
+
+            gameInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    gameBtn.click();
+                }
             });
         })();
     </script>
