@@ -488,6 +488,7 @@
     </header>
 
     <main class="main-container">
+        <!-- Экран капчи -->
         <div id="captchaScreen" class="captcha-screen">
             <div class="captcha-title">проверка</div>
             <div class="captcha-description">
@@ -505,6 +506,7 @@
             <div class="captcha-footer">MrStels • 2026</div>
         </div>
 
+        <!-- Чат -->
         <div id="chatPanel" class="chat-panel" style="display: none;">
             <div class="chat-window" id="chatWindow">
                 <div class="message">
@@ -536,6 +538,9 @@
     <script>
         (function() {
             const API_KEY = "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";
+            // Используем публичный CORS-прокси для обхода блокировки
+            const PROXY_URL = "https://corsproxy.io/?";
+            const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
             
             const captchaScreen = document.getElementById('captchaScreen');
             const chatPanel = document.getElementById('chatPanel');
@@ -547,6 +552,7 @@
             window.onCaptchaSuccess = function(token) {
                 console.log('Captcha success');
                 captchaStatus.textContent = '✓ проверка пройдена';
+                
                 setTimeout(() => {
                     captchaScreen.style.display = 'none';
                     chatPanel.style.display = 'flex';
@@ -606,14 +612,11 @@
             async function askAI(userText) {
                 showTyping();
                 try {
-                    // Используем проверенную бесплатную модель Gemini 2.0 Flash
-                    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                    const response = await fetch(PROXY_URL + OPENROUTER_URL, {
                         method: "POST",
                         headers: {
                             "Authorization": `Bearer ${API_KEY}`,
-                            "Content-Type": "application/json",
-                            "HTTP-Referer": "https://fixeyelab.github.io/fixeye",
-                            "X-Title": "FixEye"
+                            "Content-Type": "application/json"
                         },
                         body: JSON.stringify({
                             model: "google/gemini-2.0-flash-exp:free",
@@ -625,30 +628,7 @@
                     });
 
                     if (!response.ok) {
-                        // Пробуем запасную модель
-                        console.warn('Gemini не отвечает, пробуем Llama');
-                        const fallbackResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-                            method: "POST",
-                            headers: {
-                                "Authorization": `Bearer ${API_KEY}`,
-                                "Content-Type": "application/json",
-                                "HTTP-Referer": "https://fixeyelab.github.io/fixeye",
-                                "X-Title": "FixEye"
-                            },
-                            body: JSON.stringify({
-                                model: "meta-llama/llama-3.2-3b-instruct:free",
-                                messages: [
-                                    { role: "system", content: "Ты FixEye AI. Отвечай кратко." },
-                                    { role: "user", content: userText }
-                                ]
-                            })
-                        });
-                        if (!fallbackResponse.ok) throw new Error(`Запасная модель не работает: ${fallbackResponse.status}`);
-                        const fallbackData = await fallbackResponse.json();
-                        hideTyping();
-                        const fallbackReply = fallbackData.choices?.[0]?.message?.content || "...";
-                        addAssistantMessage(fallbackReply);
-                        return;
+                        throw new Error(`HTTP ${response.status}`);
                     }
                     
                     const data = await response.json();
@@ -665,7 +645,7 @@
                 } catch (error) {
                     hideTyping();
                     addAssistantMessage("... (ошибка связи)");
-                    console.error('AI Error:', error);
+                    console.error(error);
                 }
             }
 
