@@ -23,7 +23,7 @@
             color: #f0f0f0;
         }
 
-        /* ПИКСЕЛЬНЫЙ ФОН — красный слева, синий справа (оставим как есть) */
+        /* ПИКСЕЛЬНЫЙ ФОН */
         body::before {
             content: "";
             position: fixed;
@@ -43,7 +43,6 @@
             pointer-events: none;
         }
 
-        /* Размытое пятно посередине (тоже оставим) */
         body::after {
             content: "";
             position: fixed;
@@ -60,7 +59,6 @@
             mix-blend-mode: overlay;
         }
 
-        /* Шапка — теперь тоже в синем стиле */
         .header {
             background: rgba(25, 20, 30, 0.7);
             backdrop-filter: blur(15px);
@@ -71,7 +69,7 @@
             display: flex;
             align-items: center;
             gap: 16px;
-            border: 2px solid #3b8cff; /* синяя обводка */
+            border: 2px solid #3b8cff;
             box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
         }
 
@@ -85,7 +83,7 @@
             width: 52px;
             height: 52px;
             border-radius: 18px;
-            background: linear-gradient(145deg, #3b8cff, #8fb0ff); /* синий градиент */
+            background: linear-gradient(145deg, #3b8cff, #8fb0ff);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -116,7 +114,6 @@
             width: 100%;
         }
 
-        /* Экран капчи (уже синий, оставляем как есть) */
         .captcha-screen {
             background: rgba(25, 20, 30, 0.6);
             backdrop-filter: blur(15px);
@@ -195,7 +192,6 @@
             text-align: center;
         }
 
-        /* Чат — теперь тоже в синем */
         .chat-panel {
             background: rgba(25, 20, 30, 0.6);
             backdrop-filter: blur(15px);
@@ -245,7 +241,7 @@
             border-radius: 14px;
             background: rgba(40, 35, 45, 0.9);
             backdrop-filter: blur(5px);
-            border: 2px solid #3b8cff; /* синяя обводка */
+            border: 2px solid #3b8cff;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -255,7 +251,7 @@
         }
 
         .avatar-user {
-            background: linear-gradient(145deg, #ff5f5f, #ff8f8f); /* красный для пользователя (контраст) */
+            background: linear-gradient(145deg, #ff5f5f, #ff8f8f);
             border-color: #ff8f8f;
             color: white;
         }
@@ -265,7 +261,7 @@
             border-radius: 20px;
             background: rgba(35, 30, 40, 0.9);
             backdrop-filter: blur(5px);
-            border: 1px solid rgba(59, 140, 255, 0.3); /* синий оттенок */
+            border: 1px solid rgba(59, 140, 255, 0.3);
             color: #f0f0f0;
             font-size: 15px;
             line-height: 1.5;
@@ -277,7 +273,6 @@
             border: 1px solid rgba(255, 140, 140, 0.3);
         }
 
-        /* Индикатор печати — синий */
         .typing-indicator {
             display: flex;
             gap: 8px;
@@ -312,7 +307,6 @@
             30% { opacity: 1; transform: scale(1.2); }
         }
 
-        /* Поле ввода — синяя обводка */
         .input-area {
             display: flex;
             gap: 12px;
@@ -342,7 +336,6 @@
             color: #888;
         }
 
-        /* Кнопка отправки — синяя */
         .send-button {
             width: 56px;
             height: 56px;
@@ -368,7 +361,6 @@
             transform: scale(0.98);
         }
 
-        /* Синяя кнопка Telegram */
         .tg-button-container {
             display: flex;
             justify-content: center;
@@ -417,7 +409,6 @@
             margin-top: 10px;
         }
 
-        /* Скроллбар синий */
         .chat-window::-webkit-scrollbar {
             width: 6px;
         }
@@ -432,7 +423,6 @@
             border-radius: 10px;
         }
 
-        /* Адаптация */
         @media (max-width: 600px) {
             .header {
                 margin: 12px;
@@ -498,7 +488,6 @@
     </header>
 
     <main class="main-container">
-        <!-- Экран капчи -->
         <div id="captchaScreen" class="captcha-screen">
             <div class="captcha-title">проверка</div>
             <div class="captcha-description">
@@ -516,13 +505,12 @@
             <div class="captcha-footer">MrStels • 2026</div>
         </div>
 
-        <!-- Чат -->
         <div id="chatPanel" class="chat-panel" style="display: none;">
             <div class="chat-window" id="chatWindow">
                 <div class="message">
                     <div class="avatar">👁️</div>
                     <div class="bubble">
-                        <strong style="color: #8fb0ff;">FixEye AI</strong><br>
+                        <strong style="color: #8fb0ff;">FixEye AI 3.1 Pro</strong><br>
                         Привет.
                     </div>
                 </div>
@@ -583,7 +571,7 @@
                 div.innerHTML = `
                     <div class="avatar">👁️</div>
                     <div class="bubble">
-                        <strong style="color: #8fb0ff;">FixEye AI</strong><br>${text}
+                        <strong style="color: #8fb0ff;">FixEye AI 3.1 Pro</strong><br>${text}
                     </div>
                 `;
                 chatWindow.appendChild(div);
@@ -628,7 +616,7 @@
                             "X-Title": "FixEye"
                         },
                         body: JSON.stringify({
-                            model: "google/gemini-2.0-flash-exp:free",
+                            model: "google/gemini-3.1-pro:free", // Вот теперь точно 3.1 Pro!
                             messages: [
                                 { role: "system", content: "Ты FixEye AI. Отвечай кратко и по делу." },
                                 { role: "user", content: userText }
