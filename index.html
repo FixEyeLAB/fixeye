@@ -9,6 +9,8 @@
     <link rel="shortcut icon" href="https://fixeye.shop/favicon.ico" type="image/x-icon">
     <!-- Turnstile API -->
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    <!-- Google Custom Search -->
+    <script async src="https://cse.google.com/cse.js?cx=602050ee93df247a1"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -221,19 +223,71 @@
             box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
             display: flex;
             flex-direction: column;
-            height: calc(90vh - 140px);
             min-height: 500px;
             display: none;
             width: 100%;
         }
-        .chat-window {
+        
+        /* Переключатель режимов (как в Google) */
+        .mode-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--accent-color, #3b8cff);
+            overflow-x: auto;
+            white-space: nowrap;
+            scrollbar-width: thin;
+            -webkit-overflow-scrolling: touch;
+        }
+        .mode-selector::-webkit-scrollbar {
+            height: 4px;
+        }
+        .mode-selector::-webkit-scrollbar-thumb {
+            background: var(--accent-color, #3b8cff);
+            border-radius: 4px;
+        }
+        .mode-btn {
+            background: transparent;
+            border: 2px solid transparent;
+            color: #b0b0b0;
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.2s;
+            flex-shrink: 0;
+        }
+        .mode-btn.active {
+            background: var(--accent-color, #3b8cff);
+            color: white;
+            border-color: var(--accent-light, #8fb0ff);
+        }
+        .mode-btn:hover:not(.active) {
+            border-color: var(--accent-color, #3b8cff);
+            color: var(--accent-color, #3b8cff);
+        }
+        
+        /* Контейнеры режимов */
+        .mode-container {
             flex: 1;
+            overflow-y: auto;
+        }
+        .mode-container.hidden {
+            display: none;
+        }
+        
+        /* AI режим */
+        .chat-window {
+            height: 300px;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
             gap: 16px;
             padding: 8px 8px 20px 8px;
             scroll-behavior: smooth;
+            margin-bottom: 16px;
         }
         .message {
             display: flex;
@@ -287,7 +341,7 @@
             30% { opacity: 1; transform: scale(1.2); }
         }
         .input-area {
-            display: flex; gap: 12px; margin-top: 16px;
+            display: flex; gap: 12px;
             background: rgba(25, 20, 30, 0.7);
             backdrop-filter: blur(15px);
             -webkit-backdrop-filter: blur(15px);
@@ -310,31 +364,17 @@
         }
         .send-button:hover { background: var(--accent-light, #5f9eff); transform: scale(1.02); }
         .send-button:active { transform: scale(0.98); }
-        .tg-button-container {
-            display: flex; justify-content: center; margin-top: 20px; margin-bottom: 5px;
+        
+        /* Поиск Google */
+        .gcse-searchbox {
+            margin-bottom: 20px;
         }
-        .tg-button {
-            display: inline-flex; align-items: center; gap: 10px;
-            background: var(--accent-color, #3b8cff);
-            color: white; text-decoration: none;
-            font-size: 16px; font-weight: 500; padding: 14px 30px;
-            border-radius: 30px; border: 2px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 4px 20px var(--accent-color, #3b8cff);
-            transition: 0.2s; backdrop-filter: blur(5px);
+        .search-container {
+            padding: 10px 0;
         }
-        .tg-button:hover {
-            background: var(--accent-light, #5f9eff);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px var(--accent-color, #3b8cff);
-        }
-        .tg-button:active { transform: translateY(0); }
-        .tg-button span { font-size: 24px; line-height: 1; }
+        
+        /* Игра */
         .game-container {
-            margin-top: 20px;
-            background: rgba(25, 20, 30, 0.6);
-            backdrop-filter: blur(15px);
-            border-radius: 25px;
-            border: 2px solid var(--accent-color, #3b8cff);
             padding: 20px;
         }
         .game-title {
@@ -375,6 +415,28 @@
             font-size: 14px;
             min-height: 20px;
         }
+        
+        /* Кнопка Telegram */
+        .tg-button-container {
+            display: flex; justify-content: center; margin: 20px 0;
+        }
+        .tg-button {
+            display: inline-flex; align-items: center; gap: 10px;
+            background: var(--accent-color, #3b8cff);
+            color: white; text-decoration: none;
+            font-size: 16px; font-weight: 500; padding: 14px 30px;
+            border-radius: 30px; border: 2px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 20px var(--accent-color, #3b8cff);
+            transition: 0.2s; backdrop-filter: blur(5px);
+        }
+        .tg-button:hover {
+            background: var(--accent-light, #5f9eff);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px var(--accent-color, #3b8cff);
+        }
+        .tg-button:active { transform: translateY(0); }
+        .tg-button span { font-size: 24px; line-height: 1; }
+        
         .footer {
             text-align: center; padding: 16px; color: #8fb0ff;
             font-size: 13px; border-top: 1px solid var(--accent-color, #3b8cff);
@@ -415,7 +477,7 @@
             }
             .captcha-screen { padding: 25px 15px; min-height: 300px; }
             .captcha-box { padding: 15px 10px; max-width: 100%; }
-            .chat-panel { padding: 16px; height: calc(90vh - 120px); }
+            .chat-panel { padding: 16px; }
             .message { max-width: 90%; }
             .avatar { width: 38px; height: 38px; font-size: 18px; }
             .bubble { padding: 12px 16px; font-size: 14px; }
@@ -463,32 +525,55 @@
             <div class="captcha-footer">MrStels • 2026</div>
         </div>
         <div id="chatPanel" class="chat-panel" style="display: none;">
-            <div class="chat-window" id="chatWindow">
-                <div class="message">
-                    <div class="avatar">👁️</div>
-                    <div class="bubble">
-                        <strong style="color: var(--accent-light);">FixEye AI 3.1 Pro</strong><br>
-                        Привет.
+            <!-- Переключатель режимов -->
+            <div class="mode-selector">
+                <button class="mode-btn active" data-mode="ai">🤖 Все (AI)</button>
+                <button class="mode-btn" data-mode="search">🔍 Поиск</button>
+                <button class="mode-btn" data-mode="game">🎮 Игра</button>
+            </div>
+            
+            <!-- AI режим -->
+            <div id="aiMode" class="mode-container">
+                <div class="chat-window" id="chatWindow">
+                    <div class="message">
+                        <div class="avatar">👁️</div>
+                        <div class="bubble">
+                            <strong style="color: var(--accent-light);">FixEye AI 3.1 Pro</strong><br>
+                            Привет.
+                        </div>
                     </div>
                 </div>
+                <div class="input-area">
+                    <textarea id="userInput" placeholder="Сообщение..." rows="1"></textarea>
+                    <button class="send-button" id="sendBtn">↵</button>
+                </div>
             </div>
-            <div class="input-area">
-                <textarea id="userInput" placeholder="Сообщение..." rows="1"></textarea>
-                <button class="send-button" id="sendBtn">↵</button>
+            
+            <!-- Поиск Google -->
+            <div id="searchMode" class="mode-container hidden">
+                <div class="search-container">
+                    <div class="gcse-searchbox"></div>
+                    <div class="gcse-searchresults"></div>
+                </div>
             </div>
+            
+            <!-- Игра -->
+            <div id="gameMode" class="mode-container hidden">
+                <div class="game-container">
+                    <div class="game-title">🎲 угадай число (1–10)</div>
+                    <div class="game-input-area">
+                        <input type="number" id="gameInput" class="game-input" placeholder="твой вариант" min="1" max="10">
+                        <button class="game-button" id="gameBtn">проверить</button>
+                    </div>
+                    <div class="game-hint" id="gameHint">загадано число...</div>
+                </div>
+            </div>
+            
+            <!-- Кнопка Telegram (общая для всех режимов) -->
             <div class="tg-button-container">
                 <a href="https://t.me/+KkWe78dYOOk4Zjgy" target="_blank" class="tg-button">
                     <span>✈️</span> Все модеры фиксая
                 </a>
-            </div>
-            <!-- Мини-игра -->
-            <div class="game-container">
-                <div class="game-title">🎲 угадай число (1–10)</div>
-                <div class="game-input-area">
-                    <input type="number" id="gameInput" class="game-input" placeholder="твой вариант" min="1" max="10">
-                    <button class="game-button" id="gameBtn">проверить</button>
-                </div>
-                <div class="game-hint" id="gameHint">загадано число...</div>
             </div>
         </div>
     </main>
@@ -513,6 +598,12 @@
             const soundToggle = document.getElementById('soundToggle');
             const infoToggle = document.getElementById('infoToggle');
             
+            // --- ЭЛЕМЕНТЫ РЕЖИМОВ ---
+            const modeBtns = document.querySelectorAll('.mode-btn');
+            const aiMode = document.getElementById('aiMode');
+            const searchMode = document.getElementById('searchMode');
+            const gameMode = document.getElementById('gameMode');
+            
             // --- ИГРА ---
             const gameInput = document.getElementById('gameInput');
             const gameBtn = document.getElementById('gameBtn');
@@ -528,6 +619,7 @@
             let backgroundMusic = null;
             let musicGainNode = null;
             let musicOscillators = [];
+            let musicInterval = null;
 
             function initAudio() {
                 if (audioCtx) return;
@@ -535,6 +627,10 @@
             }
 
             function stopBackgroundMusic() {
+                if (musicInterval) {
+                    clearInterval(musicInterval);
+                    musicInterval = null;
+                }
                 if (musicGainNode) {
                     // Плавное затухание
                     musicGainNode.gain.setValueAtTime(musicGainNode.gain.value, audioCtx.currentTime);
@@ -549,6 +645,24 @@
                 }
             }
 
+            function playNote(freq, type = 'sine', duration = 0.5, gainValue = 0.05, startTime = 0) {
+                if (!soundEnabled || !audioCtx) return;
+                
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(musicGainNode);
+                
+                oscillator.type = type;
+                oscillator.frequency.value = freq;
+                gainNode.gain.value = gainValue;
+                
+                oscillator.start(audioCtx.currentTime + startTime);
+                oscillator.stop(audioCtx.currentTime + startTime + duration);
+                
+                return oscillator;
+            }
+
             function startBackgroundMusic() {
                 if (!soundEnabled || !audioCtx) return;
                 
@@ -561,77 +675,77 @@
                 
                 // Создаем узел громкости
                 musicGainNode = audioCtx.createGain();
-                musicGainNode.gain.setValueAtTime(0.15, audioCtx.currentTime); // Тихая, фоновая громкость
+                musicGainNode.gain.setValueAtTime(0.12, audioCtx.currentTime); // Тихая, фоновая громкость
                 musicGainNode.connect(audioCtx.destination);
                 
-                // Создаем несколько осцилляторов для имитации пианино и эмбиента
+                // Фоновая подложка (струнные)
+                const padOsc = audioCtx.createOscillator();
+                padOsc.type = 'sine';
+                padOsc.frequency.setValueAtTime(130.81, audioCtx.currentTime); // C3
+                const padGain = audioCtx.createGain();
+                padGain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+                padOsc.connect(padGain);
+                padGain.connect(musicGainNode);
+                padOsc.start();
                 
-                // 1. Основная мелодия (пианино) - похожа на начало "Sweden" и "Wet Hands"
-                const pianoOsc = audioCtx.createOscillator();
-                pianoOsc.type = 'triangle';
-                pianoOsc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // До (C5)
-                
-                const pianoGain = audioCtx.createGain();
-                pianoGain.gain.setValueAtTime(0.08, audioCtx.currentTime);
-                
-                pianoOsc.connect(pianoGain);
-                pianoGain.connect(musicGainNode);
-                
-                // 2. Бас-подложка (эмбиент)
-                const bassOsc = audioCtx.createOscillator();
-                bassOsc.type = 'sine';
-                bassOsc.frequency.setValueAtTime(130.81, audioCtx.currentTime); // До (C3)
-                
-                const bassGain = audioCtx.createGain();
-                bassGain.gain.setValueAtTime(0.05, audioCtx.currentTime);
-                
-                bassOsc.connect(bassGain);
-                bassGain.connect(musicGainNode);
-                
-                // 3. Вторая гармония (для объема)
+                // Вторая гармония (для объема)
                 const harmonyOsc = audioCtx.createOscillator();
-                harmonyOsc.type = 'sine';
-                harmonyOsc.frequency.setValueAtTime(261.63, audioCtx.currentTime); // До (C4)
-                
+                harmonyOsc.type = 'triangle';
+                harmonyOsc.frequency.setValueAtTime(261.63, audioCtx.currentTime); // C4
                 const harmonyGain = audioCtx.createGain();
-                harmonyGain.gain.setValueAtTime(0.06, audioCtx.currentTime);
-                
+                harmonyGain.gain.setValueAtTime(0.03, audioCtx.currentTime);
                 harmonyOsc.connect(harmonyGain);
                 harmonyGain.connect(musicGainNode);
-                
-                // Запоминаем осцилляторы
-                musicOscillators = [pianoOsc, bassOsc, harmonyOsc];
-                
-                // Запускаем
-                pianoOsc.start();
-                bassOsc.start();
                 harmonyOsc.start();
                 
-                // Мелодические изменения через 4 секунды
-                setTimeout(() => {
-                    if (!soundEnabled || !audioCtx) return;
-                    pianoOsc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // Ре (D5)
-                }, 4000);
+                musicOscillators = [padOsc, harmonyOsc];
                 
-                setTimeout(() => {
-                    if (!soundEnabled || !audioCtx) return;
-                    pianoOsc.frequency.setValueAtTime(659.25, audioCtx.currentTime); // Ми (E5)
-                }, 6000);
+                // Мелодия (пианино) - каждые несколько секунд новые ноты
+                const melodyNotes = [
+                    { freq: 523.25, dur: 0.8 }, // C5
+                    { freq: 587.33, dur: 0.8 }, // D5
+                    { freq: 659.25, dur: 1.2 }, // E5
+                    { freq: 587.33, dur: 0.8 }, // D5
+                    { freq: 523.25, dur: 2.0 }, // C5
+                    { freq: 493.88, dur: 0.8 }, // B4
+                    { freq: 523.25, dur: 1.5 }, // C5
+                    { freq: 587.33, dur: 0.8 }, // D5
+                    { freq: 659.25, dur: 1.0 }, // E5
+                    { freq: 698.46, dur: 1.0 }, // F5
+                    { freq: 659.25, dur: 1.5 }, // E5
+                    { freq: 587.33, dur: 2.0 }, // D5
+                ];
                 
-                setTimeout(() => {
-                    if (!soundEnabled || !audioCtx) return;
-                    pianoOsc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // Назад к До
-                }, 8000);
+                let noteIndex = 0;
+                let timeOffset = 0;
                 
-                // Циклические изменения (каждые 8 секунд повторяем паттерн)
-                setInterval(() => {
+                function playNextNote() {
                     if (!soundEnabled || !audioCtx) return;
-                    setTimeout(() => pianoOsc.frequency.setValueAtTime(587.33, audioCtx.currentTime), 0);
-                    setTimeout(() => pianoOsc.frequency.setValueAtTime(659.25, audioCtx.currentTime), 2000);
-                    setTimeout(() => pianoOsc.frequency.setValueAtTime(523.25, audioCtx.currentTime), 4000);
-                }, 8000);
+                    
+                    const note = melodyNotes[noteIndex];
+                    const pianoOsc = audioCtx.createOscillator();
+                    pianoOsc.type = 'triangle';
+                    pianoOsc.frequency.value = note.freq;
+                    
+                    const pianoGain = audioCtx.createGain();
+                    pianoGain.gain.value = 0.07;
+                    
+                    pianoOsc.connect(pianoGain);
+                    pianoGain.connect(musicGainNode);
+                    
+                    pianoOsc.start(audioCtx.currentTime);
+                    pianoOsc.stop(audioCtx.currentTime + note.dur);
+                    
+                    noteIndex = (noteIndex + 1) % melodyNotes.length;
+                }
                 
-                backgroundMusic = { pianoOsc, bassOsc, harmonyOsc };
+                // Играем первую ноту сразу
+                setTimeout(() => playNextNote(), 100);
+                
+                // Запускаем интервал для мелодии
+                musicInterval = setInterval(() => {
+                    playNextNote();
+                }, 2800);
             }
 
             function beep(freq = 800, duration = 0.1, vol = 0.2) {
@@ -644,6 +758,7 @@
                 oscillator.connect(gainNode);
                 gainNode.connect(audioCtx.destination);
                 oscillator.frequency.value = freq;
+                oscillator.type = 'sine';
                 gainNode.gain.value = vol;
                 oscillator.start();
                 oscillator.stop(audioCtx.currentTime + duration);
@@ -657,19 +772,19 @@
                     initAudio();
                     startBackgroundMusic();
                     // тестовый звук
-                    beep(600, 0.15, 0.15);
+                    beep(600, 0.15, 0.1);
                 } else {
                     stopBackgroundMusic();
                 }
             });
 
             function playSendSound() {
-                beep(700, 0.08, 0.1);
+                beep(700, 0.08, 0.08);
             }
 
             function playWinSound() {
-                beep(1200, 0.2, 0.15);
-                beep(1500, 0.15, 0.15);
+                beep(1200, 0.2, 0.1);
+                beep(1500, 0.15, 0.1);
             }
 
             // --- ТЕМА ---
@@ -695,7 +810,35 @@
 
             // --- ИНФО ---
             infoToggle.addEventListener('click', () => {
-                alert('FixEye v1.0.0 (сборка 1010)');
+                alert('FixEye v1.0.0 (сборка 1020)');
+            });
+
+            // --- ПЕРЕКЛЮЧЕНИЕ РЕЖИМОВ ---
+            modeBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    // Убираем активный класс у всех
+                    modeBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    
+                    // Прячем все режимы
+                    aiMode.classList.add('hidden');
+                    searchMode.classList.add('hidden');
+                    gameMode.classList.add('hidden');
+                    
+                    // Показываем выбранный режим
+                    const mode = btn.dataset.mode;
+                    if (mode === 'ai') {
+                        aiMode.classList.remove('hidden');
+                    } else if (mode === 'search') {
+                        searchMode.classList.remove('hidden');
+                        // Переинициализация поиска (если нужно)
+                        if (window.__gcse) {
+                            window.__gcse.initSearch();
+                        }
+                    } else if (mode === 'game') {
+                        gameMode.classList.remove('hidden');
+                    }
+                });
             });
 
             // --- КАПЧА ---
@@ -708,12 +851,10 @@
                     secretNumber = Math.floor(Math.random() * 10) + 1;
                     gameHint.textContent = 'загадано число (1–10)';
                     gameActive = true;
-                    
-                    // Если звуки уже включены, фоновая музыка продолжит играть автоматически
                 }, 500);
             };
 
-            // --- ЧАТ ---
+            // --- ЧАТ AI ---
             function addUserMessage(text) {
                 const div = document.createElement('div');
                 div.className = 'message message-right';
