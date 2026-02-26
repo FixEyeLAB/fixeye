@@ -366,11 +366,12 @@
         .send-button:active { transform: scale(0.98); }
         
         /* Поиск Google */
-        .gcse-searchbox {
-            margin-bottom: 20px;
-        }
         .search-container {
             padding: 10px 0;
+            min-height: 400px;
+        }
+        .gcse-searchbox {
+            margin-bottom: 20px;
         }
         
         /* Игра */
@@ -569,7 +570,7 @@
                 </div>
             </div>
             
-            <!-- Кнопка Telegram (общая для всех режимов) -->
+            <!-- Кнопка Telegram (общая) -->
             <div class="tg-button-container">
                 <a href="https://t.me/+KkWe78dYOOk4Zjgy" target="_blank" class="tg-button">
                     <span>✈️</span> Все модеры фиксая
@@ -611,7 +612,7 @@
             let secretNumber = Math.floor(Math.random() * 10) + 1;
             let gameActive = true;
 
-            // --- ЗВУКИ через Web Audio API ---
+            // --- ЗВУКИ через Web Audio API (улучшенные) ---
             let audioCtx = null;
             let soundEnabled = false;
             
@@ -620,10 +621,20 @@
             let musicGainNode = null;
             let musicOscillators = [];
             let musicInterval = null;
+            let reverbNode = null;
 
             function initAudio() {
                 if (audioCtx) return;
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // Создаем простую реверберацию через delay
+                const delay = audioCtx.createDelay(1.5);
+                delay.delayTime.value = 0.3;
+                const feedback = audioCtx.createGain();
+                feedback.gain.value = 0.3;
+                delay.connect(feedback);
+                feedback.connect(delay);
+                reverbNode = delay;
             }
 
             function stopBackgroundMusic() {
@@ -634,121 +645,104 @@
                 if (musicGainNode) {
                     // Плавное затухание
                     musicGainNode.gain.setValueAtTime(musicGainNode.gain.value, audioCtx.currentTime);
-                    musicGainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+                    musicGainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1);
                     setTimeout(() => {
                         musicOscillators.forEach(osc => {
                             try { osc.stop(); } catch(e) {}
                         });
                         musicOscillators = [];
                         backgroundMusic = null;
-                    }, 500);
+                    }, 1000);
                 }
             }
 
-            function playNote(freq, type = 'sine', duration = 0.5, gainValue = 0.05, startTime = 0) {
+            function playPad(freq, gain = 0.02) {
                 if (!soundEnabled || !audioCtx) return;
+                const osc = audioCtx.createOscillator();
+                osc.type = 'sine';
+                osc.frequency.value = freq;
                 
-                const oscillator = audioCtx.createOscillator();
                 const gainNode = audioCtx.createGain();
-                oscillator.connect(gainNode);
-                gainNode.connect(musicGainNode);
+                gainNode.gain.value = gain;
                 
-                oscillator.type = type;
-                oscillator.frequency.value = freq;
-                gainNode.gain.value = gainValue;
+                // Фильтр для мягкости
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.value = 400;
                 
-                oscillator.start(audioCtx.currentTime + startTime);
-                oscillator.stop(audioCtx.currentTime + startTime + duration);
+                osc.connect(gainNode);
+                gainNode.connect(filter);
+                filter.connect(musicGainNode);
                 
-                return oscillator;
+                osc.start();
+                return { osc, gainNode, filter };
             }
 
             function startBackgroundMusic() {
                 if (!soundEnabled || !audioCtx) return;
                 
-                // Останавливаем предыдущую музыку
                 stopBackgroundMusic();
                 
                 if (audioCtx.state === 'suspended') {
                     audioCtx.resume();
                 }
                 
-                // Создаем узел громкости
+                // Основной выход с реверберацией
                 musicGainNode = audioCtx.createGain();
-                musicGainNode.gain.setValueAtTime(0.12, audioCtx.currentTime); // Тихая, фоновая громкость
-                musicGainNode.connect(audioCtx.destination);
+                musicGainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
                 
-                // Фоновая подложка (струнные)
-                const padOsc = audioCtx.createOscillator();
-                padOsc.type = 'sine';
-                padOsc.frequency.setValueAtTime(130.81, audioCtx.currentTime); // C3
-                const padGain = audioCtx.createGain();
-                padGain.gain.setValueAtTime(0.04, audioCtx.currentTime);
-                padOsc.connect(padGain);
-                padGain.connect(musicGainNode);
-                padOsc.start();
+                if (reverbNode) {
+                    musicGainNode.connect(reverbNode);
+                    reverbNode.connect(audioCtx.destination);
+                } else {
+                    musicGainNode.connect(audioCtx.destination);
+                }
                 
-                // Вторая гармония (для объема)
-                const harmonyOsc = audioCtx.createOscillator();
-                harmonyOsc.type = 'triangle';
-                harmonyOsc.frequency.setValueAtTime(261.63, audioCtx.currentTime); // C4
-                const harmonyGain = audioCtx.createGain();
-                harmonyGain.gain.setValueAtTime(0.03, audioCtx.currentTime);
-                harmonyOsc.connect(harmonyGain);
-                harmonyGain.connect(musicGainNode);
-                harmonyOsc.start();
+                // Фоновый эмбиент (аккорд Cmaj7)
+                const pad1 = playPad(130.81, 0.03); // C3
+                const pad2 = playPad(164.81, 0.02); // E3
+                const pad3 = playPad(196.00, 0.02); // G3
+                const pad4 = playPad(261.63, 0.01); // C4
                 
-                musicOscillators = [padOsc, harmonyOsc];
+                musicOscillators = [pad1?.osc, pad2?.osc, pad3?.osc, pad4?.osc].filter(Boolean);
                 
-                // Мелодия (пианино) - каждые несколько секунд новые ноты
+                // Медленная мелодия (как в Minecraft)
                 const melodyNotes = [
-                    { freq: 523.25, dur: 0.8 }, // C5
-                    { freq: 587.33, dur: 0.8 }, // D5
-                    { freq: 659.25, dur: 1.2 }, // E5
-                    { freq: 587.33, dur: 0.8 }, // D5
-                    { freq: 523.25, dur: 2.0 }, // C5
-                    { freq: 493.88, dur: 0.8 }, // B4
-                    { freq: 523.25, dur: 1.5 }, // C5
-                    { freq: 587.33, dur: 0.8 }, // D5
-                    { freq: 659.25, dur: 1.0 }, // E5
-                    { freq: 698.46, dur: 1.0 }, // F5
-                    { freq: 659.25, dur: 1.5 }, // E5
-                    { freq: 587.33, dur: 2.0 }, // D5
+                    523.25, 587.33, 659.25, 523.25, 493.88, 523.25, 587.33, 659.25, 698.46, 659.25, 587.33
                 ];
-                
                 let noteIndex = 0;
-                let timeOffset = 0;
                 
                 function playNextNote() {
                     if (!soundEnabled || !audioCtx) return;
                     
-                    const note = melodyNotes[noteIndex];
-                    const pianoOsc = audioCtx.createOscillator();
-                    pianoOsc.type = 'triangle';
-                    pianoOsc.frequency.value = note.freq;
+                    const freq = melodyNotes[noteIndex % melodyNotes.length];
+                    const osc = audioCtx.createOscillator();
+                    osc.type = 'triangle';
+                    osc.frequency.value = freq;
                     
-                    const pianoGain = audioCtx.createGain();
-                    pianoGain.gain.value = 0.07;
+                    const gainNode = audioCtx.createGain();
+                    gainNode.gain.value = 0.04;
                     
-                    pianoOsc.connect(pianoGain);
-                    pianoGain.connect(musicGainNode);
+                    const filter = audioCtx.createBiquadFilter();
+                    filter.type = 'lowpass';
+                    filter.frequency.value = 800;
                     
-                    pianoOsc.start(audioCtx.currentTime);
-                    pianoOsc.stop(audioCtx.currentTime + note.dur);
+                    osc.connect(gainNode);
+                    gainNode.connect(filter);
+                    filter.connect(musicGainNode);
                     
-                    noteIndex = (noteIndex + 1) % melodyNotes.length;
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 2);
+                    
+                    noteIndex++;
                 }
                 
-                // Играем первую ноту сразу
-                setTimeout(() => playNextNote(), 100);
-                
-                // Запускаем интервал для мелодии
-                musicInterval = setInterval(() => {
-                    playNextNote();
-                }, 2800);
+                // Первая нота через 1 сек
+                setTimeout(playNextNote, 1000);
+                musicInterval = setInterval(playNextNote, 4000);
             }
 
-            function beep(freq = 800, duration = 0.1, vol = 0.2) {
+            function beep(freq = 800, duration = 0.1, vol = 0.1) {
                 if (!soundEnabled || !audioCtx) return;
                 if (audioCtx.state === 'suspended') {
                     audioCtx.resume();
@@ -771,20 +765,19 @@
                 if (soundEnabled) {
                     initAudio();
                     startBackgroundMusic();
-                    // тестовый звук
-                    beep(600, 0.15, 0.1);
+                    beep(600, 0.15, 0.08);
                 } else {
                     stopBackgroundMusic();
                 }
             });
 
             function playSendSound() {
-                beep(700, 0.08, 0.08);
+                beep(700, 0.08, 0.06);
             }
 
             function playWinSound() {
-                beep(1200, 0.2, 0.1);
-                beep(1500, 0.15, 0.1);
+                beep(1200, 0.2, 0.08);
+                beep(1500, 0.15, 0.08);
             }
 
             // --- ТЕМА ---
@@ -810,30 +803,27 @@
 
             // --- ИНФО ---
             infoToggle.addEventListener('click', () => {
-                alert('FixEye v1.0.0 (сборка 1020)');
+                alert('FixEye v1.0.0 (сборка 1030)');
             });
 
             // --- ПЕРЕКЛЮЧЕНИЕ РЕЖИМОВ ---
             modeBtns.forEach(btn => {
                 btn.addEventListener('click', () => {
-                    // Убираем активный класс у всех
                     modeBtns.forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
                     
-                    // Прячем все режимы
                     aiMode.classList.add('hidden');
                     searchMode.classList.add('hidden');
                     gameMode.classList.add('hidden');
                     
-                    // Показываем выбранный режим
                     const mode = btn.dataset.mode;
                     if (mode === 'ai') {
                         aiMode.classList.remove('hidden');
                     } else if (mode === 'search') {
                         searchMode.classList.remove('hidden');
-                        // Переинициализация поиска (если нужно)
-                        if (window.__gcse) {
-                            window.__gcse.initSearch();
+                        // Принудительно перезапускаем поиск Google (если есть API)
+                        if (window.google && window.google.search && window.google.search.cse) {
+                            window.google.search.cse.element.render();
                         }
                     } else if (mode === 'game') {
                         gameMode.classList.remove('hidden');
@@ -976,7 +966,6 @@
             // --- ИГРА ---
             gameBtn.addEventListener('click', () => {
                 if (!gameActive) {
-                    // начинаем новую игру
                     secretNumber = Math.floor(Math.random() * 10) + 1;
                     gameHint.textContent = 'загадано число (1–10)';
                     gameActive = true;
