@@ -7,10 +7,13 @@
     <!-- Фавикон с сайта мерча -->
     <link rel="icon" href="https://fixeye.shop/favicon.ico" type="image/x-icon">
     <link rel="shortcut icon" href="https://fixeye.shop/favicon.ico" type="image/x-icon">
-    <!-- Turnstile API -->
-    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     <!-- Google Custom Search -->
     <script async src="https://cse.google.com/cse.js?cx=602050ee93df247a1"></script>
+    <!-- Turnstile API (капча) -->
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    <!-- Firebase SDK для Google и GitHub -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -22,6 +25,10 @@
             background: #0a0a0f;
             color: #f0f0f0;
             transition: border-color 0.3s, background 0.3s;
+        }
+        /* Динамический фон под тему */
+        body.theme-red::before {
+            filter: hue-rotate(180deg);
         }
         body::before {
             content: "";
@@ -40,6 +47,7 @@
             opacity: 0.2;
             z-index: -2;
             pointer-events: none;
+            transition: filter 0.5s ease;
         }
         body::after {
             content: "";
@@ -55,6 +63,22 @@
             z-index: -1;
             pointer-events: none;
             mix-blend-mode: overlay;
+        }
+        /* Анимации */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .header, .login-screen, .chat-panel, .mode-btn, .auth-btn, .settings-btn, .user-avatar {
+            animation: fadeIn 0.5s ease;
+        }
+        .auth-btn.active:hover {
+            animation: pulse 0.3s ease;
         }
         .header {
             background: rgba(25, 20, 30, 0.7);
@@ -109,17 +133,48 @@
         }
         .header-controls {
             display: flex;
+            align-items: center;
             gap: 8px;
             margin-left: auto;
             flex-shrink: 0;
         }
-        .theme-toggle, .sound-toggle, .info-toggle {
+        /* Аватар пользователя (скрыт до входа) */
+        .user-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 30px;
+            border: 2px solid var(--accent-color, #3b8cff);
+            cursor: pointer;
+            overflow: hidden;
+            background: #1a1a2a;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
+            flex-shrink: 0;
+        }
+        .user-avatar:hover {
+            transform: scale(1.05);
+            border-color: var(--accent-light, #8fb0ff);
+        }
+        .user-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .user-avatar span {
+            font-size: 24px;
+            color: var(--accent-color, #3b8cff);
+        }
+        /* Кнопка настроек (всегда видна) */
+        .settings-btn {
             background: rgba(255, 255, 255, 0.1);
             border: 2px solid var(--accent-color, #3b8cff);
             color: var(--accent-color, #3b8cff);
+            width: 44px;
             height: 44px;
             border-radius: 30px;
-            font-size: 20px;
+            font-size: 22px;
             cursor: pointer;
             backdrop-filter: blur(5px);
             transition: 0.2s;
@@ -127,15 +182,93 @@
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
-            padding: 0 12px;
-            gap: 4px;
         }
-        .theme-toggle:hover, .sound-toggle:hover, .info-toggle:hover {
+        .settings-btn:hover {
+            background: var(--accent-color, #3b8cff);
+            color: white;
+            animation: pulse 0.3s ease;
+        }
+        /* Панель настроек */
+        .settings-panel {
+            position: absolute;
+            top: 90px;
+            right: 30px;
+            background: rgba(25, 20, 30, 0.95);
+            backdrop-filter: blur(15px);
+            border: 2px solid var(--accent-color, #3b8cff);
+            border-radius: 20px;
+            padding: 16px;
+            min-width: 180px;
+            display: none;
+            z-index: 1000;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .settings-panel.show {
+            display: flex;
+        }
+        .settings-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 30px;
+            border: 1px solid var(--accent-color, #3b8cff);
+            cursor: pointer;
+        }
+        .settings-item:hover {
             background: var(--accent-color, #3b8cff);
             color: white;
         }
-        .info-toggle .info-text {
+        /* Выпадающее меню аватара */
+        .avatar-dropdown {
+            position: absolute;
+            top: 90px;
+            right: 80px;
+            background: rgba(25, 20, 30, 0.95);
+            backdrop-filter: blur(15px);
+            border: 2px solid var(--accent-color, #3b8cff);
+            border-radius: 20px;
+            padding: 16px;
+            min-width: 220px;
+            display: none;
+            z-index: 1000;
+        }
+        .avatar-dropdown.show {
+            display: block;
+        }
+        .user-info {
+            text-align: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--accent-color, #3b8cff);
+        }
+        .user-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--accent-light, #8fb0ff);
+        }
+        .user-email {
+            font-size: 14px;
+            color: #b0b0b0;
+            margin-top: 5px;
+            word-break: break-word;
+        }
+        .logout-btn {
+            width: 100%;
+            padding: 10px;
+            background: rgba(255, 80, 80, 0.2);
+            border: 2px solid #ff5f5f;
+            color: #ff8f8f;
+            border-radius: 30px;
             font-size: 16px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .logout-btn:hover {
+            background: #ff5f5f;
+            color: white;
         }
         .main-container {
             flex: 1;
@@ -146,7 +279,8 @@
             margin: 0 auto;
             width: 100%;
         }
-        .captcha-screen {
+        /* Экран входа */
+        .login-screen {
             background: rgba(25, 20, 30, 0.6);
             backdrop-filter: blur(15px);
             -webkit-backdrop-filter: blur(15px);
@@ -158,38 +292,88 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: 350px;
+            min-height: 450px;
             text-align: center;
             margin-bottom: 20px;
             width: 100%;
         }
-        .captcha-title {
+        .login-title {
             font-size: clamp(24px, 6vw, 32px);
             font-weight: 500;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
             background: linear-gradient(135deg, var(--accent-color, #3b8cff), var(--accent-light, #8fb0ff));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-        .captcha-description {
+        .login-description {
             color: #b0b0b0;
-            margin-bottom: 25px;
+            margin-bottom: 30px;
             max-width: 400px;
             line-height: 1.5;
             font-size: clamp(14px, 4vw, 16px);
             padding: 0 10px;
         }
-        .captcha-box {
+        .login-box {
             background: rgba(15, 10, 20, 0.6);
             border-radius: 20px;
-            padding: 20px 15px;
+            padding: 25px 20px;
             border: 2px solid var(--accent-color, #3b8cff);
             width: 100%;
-            max-width: 450px;
+            max-width: 400px;
             display: flex;
             flex-direction: column;
             align-items: center;
+            gap: 15px;
             box-shadow: inset 0 0 20px rgba(59, 140, 255, 0.1);
+        }
+        .auth-btn {
+            width: 100%;
+            padding: 14px 20px;
+            border: 2px solid var(--accent-color, #3b8cff);
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        .auth-btn.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        .auth-btn.active:hover {
+            background: var(--accent-color, #3b8cff);
+            color: white;
+            animation: pulse 0.3s ease;
+        }
+        .auth-btn.github.active:hover {
+            background: #333;
+            border-color: #333;
+        }
+        .auth-btn.google.active:hover {
+            background: #DB4437;
+            border-color: #DB4437;
+        }
+        .auth-btn.telegram.active:hover {
+            background: #0088cc;
+            border-color: #0088cc;
+        }
+        .auth-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+        .auth-divider {
+            color: #6b6b6b;
+            font-size: 14px;
+            margin: 5px 0;
         }
         .cf-turnstile {
             margin: 5px 0;
@@ -197,12 +381,11 @@
             display: flex;
             justify-content: center;
         }
-        .cf-turnstile iframe { max-width: 100%; }
         .status-message {
-            margin-top: 15px;
             color: var(--accent-color, #3b8cff);
             font-size: 14px;
             min-height: 20px;
+            margin-top: 10px;
         }
         .captcha-footer {
             margin-top: 25px;
@@ -410,11 +593,31 @@
         }
         .game-button:hover {
             background: var(--accent-light, #5f9eff);
+            animation: pulse 0.3s ease;
         }
         .game-hint {
             color: #b0b0b0;
             font-size: 14px;
             min-height: 20px;
+        }
+        .score-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            border: 1px solid var(--accent-color, #3b8cff);
+        }
+        .score-label {
+            color: #b0b0b0;
+            font-size: 14px;
+        }
+        .score-value {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--accent-color, #3b8cff);
         }
         
         /* Кнопка Telegram */
@@ -450,43 +653,150 @@
         .chat-window::-webkit-scrollbar-thumb {
             background: var(--accent-color, #3b8cff); border-radius: 10px;
         }
+        
+        /* Мобильная адаптация */
         @media (max-width: 600px) {
             .header {
-                margin: 12px;
-                padding: 12px 16px;
-                gap: 8px;
+                margin: 10px;
+                padding: 10px 12px;
+                gap: 6px;
             }
             .logo-icon {
-                width: 40px;
-                height: 40px;
-                transform: translateY(1px);
+                width: 36px;
+                height: 36px;
             }
             .logo-text h1 {
-                font-size: 22px;
+                font-size: 18px;
             }
             .logo-text p {
-                font-size: 11px;
+                font-size: 10px;
             }
-            .theme-toggle, .sound-toggle, .info-toggle {
-                width: 40px;
-                height: 40px;
-                padding: 0;
+            .user-avatar {
+                width: 36px;
+                height: 36px;
+            }
+            .settings-btn {
+                width: 36px;
+                height: 36px;
+                font-size: 18px;
+            }
+            .settings-panel {
+                top: 70px;
+                right: 10px;
+                min-width: 160px;
+                padding: 12px;
+            }
+            .avatar-dropdown {
+                top: 70px;
+                right: 50px;
+                min-width: 180px;
+                padding: 12px;
+            }
+            .login-screen {
+                padding: 20px 15px;
+                min-height: 400px;
+            }
+            .login-title {
+                font-size: 24px;
+            }
+            .login-description {
+                font-size: 14px;
+                margin-bottom: 20px;
+            }
+            .login-box {
+                padding: 20px 15px;
+            }
+            .auth-btn {
+                padding: 12px 15px;
+                font-size: 14px;
+            }
+            .chat-panel {
+                padding: 15px;
+            }
+            .mode-btn {
+                padding: 6px 15px;
+                font-size: 14px;
+            }
+            .chat-window {
+                height: 250px;
+            }
+            .avatar {
+                width: 36px;
+                height: 36px;
+                font-size: 18px;
+            }
+            .bubble {
+                padding: 10px 14px;
+                font-size: 14px;
+            }
+            .input-area textarea {
+                font-size: 14px;
+                padding: 10px 0;
+            }
+            .send-button {
+                width: 46px;
+                height: 46px;
                 font-size: 20px;
             }
-            .info-toggle .info-text {
+            .game-input {
+                padding: 10px 12px;
+                font-size: 14px;
+            }
+            .game-button {
+                padding: 0 20px;
+                font-size: 14px;
+            }
+            .score-value {
+                font-size: 20px;
+            }
+            .tg-button {
+                padding: 10px 20px;
+                font-size: 14px;
+            }
+            .tg-button span {
+                font-size: 20px;
+            }
+        }
+        
+        /* Для совсем маленьких экранов */
+        @media (max-width: 380px) {
+            .logo-text h1 {
+                font-size: 16px;
+            }
+            .logo-text p {
                 display: none;
             }
-            .captcha-screen { padding: 25px 15px; min-height: 300px; }
-            .captcha-box { padding: 15px 10px; max-width: 100%; }
-            .chat-panel { padding: 16px; }
-            .message { max-width: 90%; }
-            .avatar { width: 38px; height: 38px; font-size: 18px; }
-            .bubble { padding: 12px 16px; font-size: 14px; }
-            .tg-button { padding: 12px 24px; font-size: 14px; }
-            .game-input-area { flex-direction: column; }
-            .game-button { padding: 12px; }
+            .user-avatar {
+                width: 32px;
+                height: 32px;
+            }
+            .settings-btn {
+                width: 32px;
+                height: 32px;
+                font-size: 16px;
+            }
         }
     </style>
+    <!-- Firebase конфигурация (ЗАМЕНИТЬ НА СВОЮ) -->
+    <script>
+        // ⚠️ ЗАМЕНИТЕ НА СВОИ ДАННЫЕ ИЗ FIREBASE
+        const firebaseConfig = {
+            apiKey: "AIzaSyBxP5FvUfX1X1X1X1X1X1X1X1X1X1X1X1X",
+            authDomain: "fixeye-auth.firebaseapp.com",
+            projectId: "fixeye-auth",
+            storageBucket: "fixeye-auth.appspot.com",
+            messagingSenderId: "123456789012",
+            appId: "1:123456789012:web:abcdef1234567890"
+        };
+        
+        // Инициализация Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        
+        // Провайдеры
+        const githubProvider = new firebase.auth.GithubAuthProvider();
+        const googleProvider = new firebase.auth.GoogleAuthProvider();
+    </script>
 </head>
 <body>
     <header class="header">
@@ -500,31 +810,86 @@
             </div>
         </div>
         <div class="header-controls">
-            <button class="theme-toggle" id="themeToggle">🎨</button>
-            <button class="sound-toggle" id="soundToggle">🔇</button>
-            <button class="info-toggle" id="infoToggle">
-                <span>ℹ️</span>
-                <span class="info-text"> инфо</span>
-            </button>
+            <!-- Аватар пользователя (скрыт до входа) -->
+            <div class="user-avatar" id="userAvatar" onclick="toggleAvatarDropdown()">
+                <span>👁️</span>
+            </div>
+            <!-- Кнопка настроек (всегда видна) -->
+            <div class="settings-btn" id="settingsBtn" onclick="toggleSettingsPanel()">⚙️</div>
+        </div>
+        
+        <!-- Выпадающее меню аватара -->
+        <div class="avatar-dropdown" id="avatarDropdown">
+            <div class="user-info">
+                <div class="user-name" id="userName">Пользователь</div>
+                <div class="user-email" id="userEmail"></div>
+            </div>
+            <button class="logout-btn" onclick="logout()">Выйти</button>
+        </div>
+        
+        <!-- Панель настроек -->
+        <div class="settings-panel" id="settingsPanel">
+            <div class="settings-item" onclick="toggleTheme()">
+                <span>🎨 Тема</span>
+                <span id="themeIcon">🔵</span>
+            </div>
+            <div class="settings-item" onclick="toggleSound()">
+                <span>🔊 Звуки</span>
+                <span id="soundIcon">🔇</span>
+            </div>
         </div>
     </header>
     <main class="main-container">
-        <div id="captchaScreen" class="captcha-screen">
-            <div class="captcha-title">проверка</div>
-            <div class="captcha-description">
-                нажми на квадрат чтобы доказать что ты не бот
+        <!-- Экран входа -->
+        <div id="loginScreen" class="login-screen">
+            <div class="login-title">вход в FixEye</div>
+            <div class="login-description">
+                пройди капчу и выбери способ входа
             </div>
-            <div class="captcha-box">
+            <div class="login-box">
+                <!-- Капча (обязательна для всех, кроме @tochno) -->
                 <div class="cf-turnstile" 
                      data-sitekey="0x4AAAAAAChbxGdeEfVPW7Da"
                      data-callback="onCaptchaSuccess"
                      data-theme="dark"
                      data-size="flexible">
                 </div>
-                <div id="captchaStatus" class="status-message"></div>
+                
+                <div class="auth-divider">или войди через</div>
+                
+                <!-- GitHub -->
+                <button class="auth-btn github" id="githubLogin">
+                    <svg height="20" width="20" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+                    </svg>
+                    GitHub
+                </button>
+                
+                <!-- Google -->
+                <button class="auth-btn google" id="googleLogin">
+                    <svg height="20" width="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    Google
+                </button>
+                
+                <!-- Telegram (теперь рабочая кнопка) -->
+                <button class="auth-btn telegram" id="telegramLogin">
+                    <svg height="20" width="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.06-.2-.04-.29-.02-.12.02-2.03 1.29-2.86 1.79-.27.16-.76.46-1.09.45-.32-.01-1.04-.2-1.55-.37-.63-.2-1.13-.31-1.08-.66.02-.18.27-.37.74-.57 2.86-1.25 4.77-2.07 5.74-2.46 2.73-1.1 3.3-1.29 3.67-1.29.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06-.02.18-.03.28z"/>
+                    </svg>
+                    Telegram
+                </button>
+                
+                <div id="authStatus" class="status-message"></div>
             </div>
             <div class="captcha-footer">MrStels • 2026</div>
         </div>
+        
+        <!-- Основной интерфейс (чат, поиск, игра) -->
         <div id="chatPanel" class="chat-panel" style="display: none;">
             <!-- Переключатель режимов -->
             <div class="mode-selector">
@@ -567,6 +932,10 @@
                         <button class="game-button" id="gameBtn">проверить</button>
                     </div>
                     <div class="game-hint" id="gameHint">загадано число...</div>
+                    <div class="score-container">
+                        <span class="score-label">🏆 Баллы:</span>
+                        <span class="score-value" id="scoreDisplay">0</span>
+                    </div>
                 </div>
             </div>
             
@@ -589,15 +958,20 @@
             const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
             
             // --- ЭЛЕМЕНТЫ ---
-            const captchaScreen = document.getElementById('captchaScreen');
+            const loginScreen = document.getElementById('loginScreen');
             const chatPanel = document.getElementById('chatPanel');
             const chatWindow = document.getElementById('chatWindow');
             const userInput = document.getElementById('userInput');
             const sendBtn = document.getElementById('sendBtn');
-            const captchaStatus = document.getElementById('captchaStatus');
-            const themeToggle = document.getElementById('themeToggle');
-            const soundToggle = document.getElementById('soundToggle');
-            const infoToggle = document.getElementById('infoToggle');
+            const authStatus = document.getElementById('authStatus');
+            
+            // Аватар и меню
+            const userAvatar = document.getElementById('userAvatar');
+            const avatarDropdown = document.getElementById('avatarDropdown');
+            const userName = document.getElementById('userName');
+            const userEmail = document.getElementById('userEmail');
+            const settingsBtn = document.getElementById('settingsBtn');
+            const settingsPanel = document.getElementById('settingsPanel');
             
             // --- ЭЛЕМЕНТЫ РЕЖИМОВ ---
             const modeBtns = document.querySelectorAll('.mode-btn');
@@ -609,10 +983,12 @@
             const gameInput = document.getElementById('gameInput');
             const gameBtn = document.getElementById('gameBtn');
             const gameHint = document.getElementById('gameHint');
+            const scoreDisplay = document.getElementById('scoreDisplay');
             let secretNumber = Math.floor(Math.random() * 10) + 1;
             let gameActive = true;
+            let score = 0;
 
-            // --- ЗВУКИ через Web Audio API (улучшенные) ---
+            // --- ЗВУКИ через Web Audio API (мягкие, не 8-bit) ---
             let audioCtx = null;
             let soundEnabled = false;
             
@@ -622,6 +998,27 @@
             let musicOscillators = [];
             let musicInterval = null;
             let reverbNode = null;
+            
+            // --- ПАСХАЛКА ---
+            let easterEggSequence = [];
+            const targetSequence = ['M', 'I', 'N', 'E'];
+            let easterEggActive = false;
+            let easterEggMusic = null;
+            let easterEggInterval = null;
+
+            // Загрузка счета из localStorage
+            function loadScore() {
+                const savedScore = localStorage.getItem('fixeye_score');
+                if (savedScore !== null) {
+                    score = parseInt(savedScore);
+                    updateScoreDisplay();
+                }
+            }
+            
+            function updateScoreDisplay() {
+                scoreDisplay.textContent = score;
+                localStorage.setItem('fixeye_score', score);
+            }
 
             function initAudio() {
                 if (audioCtx) return;
@@ -655,27 +1052,74 @@
                     }, 1000);
                 }
             }
-
-            function playPad(freq, gain = 0.02) {
-                if (!soundEnabled || !audioCtx) return;
-                const osc = audioCtx.createOscillator();
-                osc.type = 'sine';
-                osc.frequency.value = freq;
+            
+            // --- МУЗЫКА ДЛЯ ПАСХАЛКИ (Minecraft C418 style) ---
+            function playEasterEggMusic() {
+                if (!audioCtx) return;
                 
-                const gainNode = audioCtx.createGain();
-                gainNode.gain.value = gain;
+                if (easterEggActive) {
+                    if (easterEggInterval) clearInterval(easterEggInterval);
+                    if (easterEggMusic) easterEggMusic.forEach(osc => { try { osc.stop(); } catch(e) {} });
+                }
                 
-                // Фильтр для мягкости
-                const filter = audioCtx.createBiquadFilter();
-                filter.type = 'lowpass';
-                filter.frequency.value = 400;
+                easterEggActive = true;
                 
-                osc.connect(gainNode);
-                gainNode.connect(filter);
-                filter.connect(musicGainNode);
+                const eggGain = audioCtx.createGain();
+                eggGain.gain.value = 0.25;
+                eggGain.connect(audioCtx.destination);
                 
-                osc.start();
-                return { osc, gainNode, filter };
+                const melodyNotes = [
+                    523.25, 587.33, 659.25, 523.25, 493.88, 523.25, 587.33, 659.25, 698.46, 659.25, 587.33
+                ];
+                let noteIndex = 0;
+                
+                function playEggNote() {
+                    const freq = melodyNotes[noteIndex % melodyNotes.length];
+                    const osc = audioCtx.createOscillator();
+                    osc.type = 'triangle';
+                    osc.frequency.value = freq;
+                    
+                    const gainNode = audioCtx.createGain();
+                    gainNode.gain.value = 0.15;
+                    
+                    const filter = audioCtx.createBiquadFilter();
+                    filter.type = 'lowpass';
+                    filter.frequency.value = 800;
+                    
+                    osc.connect(gainNode);
+                    gainNode.connect(filter);
+                    filter.connect(eggGain);
+                    
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 2);
+                    
+                    noteIndex++;
+                }
+                
+                const padOsc1 = audioCtx.createOscillator();
+                padOsc1.type = 'sine';
+                padOsc1.frequency.value = 130.81;
+                const padGain1 = audioCtx.createGain();
+                padGain1.gain.value = 0.08;
+                padOsc1.connect(padGain1);
+                padGain1.connect(eggGain);
+                padOsc1.start();
+                
+                const padOsc2 = audioCtx.createOscillator();
+                padOsc2.type = 'sine';
+                padOsc2.frequency.value = 196.00;
+                const padGain2 = audioCtx.createGain();
+                padGain2.gain.value = 0.06;
+                padOsc2.connect(padGain2);
+                padGain2.connect(eggGain);
+                padOsc2.start();
+                
+                easterEggMusic = [padOsc1, padOsc2];
+                
+                setTimeout(playEggNote, 500);
+                easterEggInterval = setInterval(playEggNote, 3000);
+                
+                alert('🎉 Пасхалка найдена! Играет Minecraft мелодия');
             }
 
             function startBackgroundMusic() {
@@ -687,7 +1131,6 @@
                     audioCtx.resume();
                 }
                 
-                // Основной выход с реверберацией
                 musicGainNode = audioCtx.createGain();
                 musicGainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
                 
@@ -698,7 +1141,6 @@
                     musicGainNode.connect(audioCtx.destination);
                 }
                 
-                // Фоновый эмбиент (аккорд Cmaj7)
                 const pad1 = playPad(130.81, 0.03); // C3
                 const pad2 = playPad(164.81, 0.02); // E3
                 const pad3 = playPad(196.00, 0.02); // G3
@@ -706,7 +1148,6 @@
                 
                 musicOscillators = [pad1?.osc, pad2?.osc, pad3?.osc, pad4?.osc].filter(Boolean);
                 
-                // Медленная мелодия (как в Minecraft)
                 const melodyNotes = [
                     523.25, 587.33, 659.25, 523.25, 493.88, 523.25, 587.33, 659.25, 698.46, 659.25, 587.33
                 ];
@@ -737,12 +1178,32 @@
                     noteIndex++;
                 }
                 
-                // Первая нота через 1 сек
                 setTimeout(playNextNote, 1000);
                 musicInterval = setInterval(playNextNote, 4000);
             }
 
-            function beep(freq = 800, duration = 0.1, vol = 0.1) {
+            function playPad(freq, gain = 0.02) {
+                if (!soundEnabled || !audioCtx) return;
+                const osc = audioCtx.createOscillator();
+                osc.type = 'sine';
+                osc.frequency.value = freq;
+                
+                const gainNode = audioCtx.createGain();
+                gainNode.gain.value = gain;
+                
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.value = 400;
+                
+                osc.connect(gainNode);
+                gainNode.connect(filter);
+                filter.connect(musicGainNode);
+                
+                osc.start();
+                return { osc, gainNode, filter };
+            }
+
+            function playSoftSound(freq, duration, vol) {
                 if (!soundEnabled || !audioCtx) return;
                 if (audioCtx.state === 'suspended') {
                     audioCtx.resume();
@@ -754,56 +1215,218 @@
                 oscillator.frequency.value = freq;
                 oscillator.type = 'sine';
                 gainNode.gain.value = vol;
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
                 oscillator.start();
                 oscillator.stop(audioCtx.currentTime + duration);
             }
 
-            soundToggle.addEventListener('click', () => {
-                soundEnabled = !soundEnabled;
-                soundToggle.textContent = soundEnabled ? '🔊' : '🔇';
-                
-                if (soundEnabled) {
-                    initAudio();
-                    startBackgroundMusic();
-                    beep(600, 0.15, 0.08);
-                } else {
-                    stopBackgroundMusic();
-                }
-            });
-
-            function playSendSound() {
-                beep(700, 0.08, 0.06);
+            function playClickSound() {
+                playSoftSound(600, 0.05, 0.05);
             }
 
             function playWinSound() {
-                beep(1200, 0.2, 0.08);
-                beep(1500, 0.15, 0.08);
+                playSoftSound(880, 0.2, 0.08);
+                setTimeout(() => playSoftSound(1108, 0.3, 0.08), 200);
             }
 
-            // --- ТЕМА ---
+            // --- ТЕМА (глобально доступна) ---
             const root = document.documentElement;
             let isRedTheme = localStorage.getItem('fixeye_theme') === 'red';
+            const themeIcon = document.getElementById('themeIcon');
+            const soundIcon = document.getElementById('soundIcon');
 
             function setTheme(red) {
                 if (red) {
                     root.style.setProperty('--accent-color', '#ff5f5f');
                     root.style.setProperty('--accent-light', '#ff9f9f');
+                    document.body.classList.add('theme-red');
+                    if (themeIcon) themeIcon.textContent = '🔴';
                 } else {
                     root.style.setProperty('--accent-color', '#3b8cff');
                     root.style.setProperty('--accent-light', '#8fb0ff');
+                    document.body.classList.remove('theme-red');
+                    if (themeIcon) themeIcon.textContent = '🔵';
                 }
                 localStorage.setItem('fixeye_theme', red ? 'red' : 'blue');
             }
             setTheme(isRedTheme);
 
-            themeToggle.addEventListener('click', () => {
+            window.toggleTheme = function() {
                 isRedTheme = !isRedTheme;
                 setTheme(isRedTheme);
+                playClickSound();
+            };
+
+            // --- ЗВУК (глобально доступен) ---
+            window.toggleSound = function() {
+                soundEnabled = !soundEnabled;
+                if (soundIcon) soundIcon.textContent = soundEnabled ? '🔊' : '🔇';
+                
+                if (soundEnabled) {
+                    initAudio();
+                    startBackgroundMusic();
+                    playClickSound();
+                } else {
+                    stopBackgroundMusic();
+                }
+            };
+
+            // --- АВАТАР И МЕНЮ (глобально доступны) ---
+            window.toggleAvatarDropdown = function() {
+                avatarDropdown.classList.toggle('show');
+                settingsPanel.classList.remove('show');
+            };
+            
+            window.toggleSettingsPanel = function() {
+                settingsPanel.classList.toggle('show');
+                avatarDropdown.classList.remove('show');
+            };
+
+            // Закрытие меню при клике вне
+            document.addEventListener('click', function(event) {
+                if (!event.target.closest('.user-avatar') && !event.target.closest('.avatar-dropdown')) {
+                    avatarDropdown.classList.remove('show');
+                }
+                if (!event.target.closest('.settings-btn') && !event.target.closest('.settings-panel')) {
+                    settingsPanel.classList.remove('show');
+                }
             });
 
-            // --- ИНФО ---
-            infoToggle.addEventListener('click', () => {
-                alert('FixEye v1.0.0 (сборка 1030)');
+            // --- ВЫХОД (глобально доступен) ---
+            window.logout = function() {
+                auth.signOut().then(() => {
+                    userAvatar.style.display = 'none';
+                    loginScreen.style.display = 'flex';
+                    chatPanel.style.display = 'none';
+                    avatarDropdown.classList.remove('show');
+                    
+                    window.captchaPassed = false;
+                    window.authPassed = false;
+                    
+                    document.querySelectorAll('.auth-btn').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                    
+                    // Сбрасываем специального пользователя
+                    window.specialTelegramUser = false;
+                });
+            };
+
+            // --- СОСТОЯНИЕ ВХОДА ---
+            let captchaPassed = false;
+            let authPassed = false;
+            let specialTelegramUser = false; // для @tochno
+            
+            function checkLoginComplete() {
+                if (specialTelegramUser || (captchaPassed && authPassed)) {
+                    loginScreen.style.display = 'none';
+                    chatPanel.style.display = 'flex';
+                    userAvatar.style.display = 'flex';
+                    
+                    if (window.currentUser) {
+                        if (window.currentUser.photoURL) {
+                            userAvatar.innerHTML = `<img src="${window.currentUser.photoURL}" alt="Avatar">`;
+                        } else {
+                            userAvatar.innerHTML = '<span>👁️</span>';
+                        }
+                        userName.textContent = window.currentUser.displayName || 'Пользователь';
+                        userEmail.textContent = window.currentUser.email || '';
+                    }
+                }
+            }
+
+            // --- КАПЧА ---
+            window.onCaptchaSuccess = function(token) {
+                if (!specialTelegramUser) { // если это не особый пользователь
+                    captchaPassed = true;
+                    authStatus.textContent = '✓ капча пройдена';
+                    
+                    document.querySelectorAll('.auth-btn').forEach(btn => {
+                        btn.classList.add('active');
+                    });
+                    
+                    checkLoginComplete();
+                }
+            };
+
+            // --- ВХОД ЧЕРЕЗ GITHUB ---
+            document.getElementById('githubLogin').addEventListener('click', () => {
+                auth.signInWithPopup(githubProvider)
+                    .then(result => {
+                        window.currentUser = result.user;
+                        authPassed = true;
+                        authStatus.textContent = `✓ Вход через GitHub: ${result.user.displayName}`;
+                        checkLoginComplete();
+                    })
+                    .catch(error => {
+                        authStatus.textContent = `❌ Ошибка: ${error.message}`;
+                    });
+            });
+
+            // --- ВХОД ЧЕРЕЗ GOOGLE ---
+            document.getElementById('googleLogin').addEventListener('click', () => {
+                auth.signInWithPopup(googleProvider)
+                    .then(result => {
+                        window.currentUser = result.user;
+                        authPassed = true;
+                        authStatus.textContent = `✓ Вход через Google: ${result.user.displayName}`;
+                        checkLoginComplete();
+                    })
+                    .catch(error => {
+                        authStatus.textContent = `❌ Ошибка: ${error.message}`;
+                    });
+            });
+
+            // --- ВХОД ЧЕРЕЗ TELEGRAM (исправлено!) ---
+            document.getElementById('telegramLogin').addEventListener('click', () => {
+                // Открываем окно авторизации Telegram
+                const botName = 'FixEyeLAB_bot'; // Имя бота
+                const redirectUrl = window.location.origin + window.location.pathname;
+                const authUrl = `https://oauth.telegram.org/auth?bot_id=${botName}&origin=${encodeURIComponent(redirectUrl)}&return_to=${encodeURIComponent(redirectUrl)}`;
+                
+                // Открываем попап
+                const popup = window.open(authUrl, 'telegram-auth', 'width=400,height=600');
+                
+                // Слушаем сообщение от попапа
+                window.addEventListener('message', function(event) {
+                    if (event.origin === 'https://oauth.telegram.org') {
+                        if (event.data && event.data.auth) {
+                            const user = event.data.auth;
+                            window.currentUser = {
+                                displayName: user.first_name + (user.last_name ? ' ' + user.last_name : ''),
+                                email: user.username ? `@${user.username}` : '',
+                                photoURL: null // Telegram не даёт фото через OAuth
+                            };
+                            
+                            // Проверяем, является ли пользователь @tochno
+                            if (user.username && user.username.toLowerCase() === 'tochno') {
+                                specialTelegramUser = true;
+                                authStatus.textContent = `✓ Особый вход: @tochno (капча не требуется)`;
+                                checkLoginComplete();
+                            } else {
+                                authPassed = true;
+                                authStatus.textContent = `✓ Вход через Telegram: ${window.currentUser.displayName}`;
+                                if (captchaPassed) checkLoginComplete();
+                            }
+                            popup.close();
+                        }
+                    }
+                });
+            });
+
+            // --- ПАСХАЛКА ---
+            document.addEventListener('keydown', (e) => {
+                if (e.key.length === 1) {
+                    easterEggSequence.push(e.key.toUpperCase());
+                    if (easterEggSequence.length > targetSequence.length) {
+                        easterEggSequence.shift();
+                    }
+                    if (easterEggSequence.join('') === targetSequence.join('')) {
+                        initAudio();
+                        playEasterEggMusic();
+                        easterEggSequence = [];
+                    }
+                }
             });
 
             // --- ПЕРЕКЛЮЧЕНИЕ РЕЖИМОВ ---
@@ -821,7 +1444,6 @@
                         aiMode.classList.remove('hidden');
                     } else if (mode === 'search') {
                         searchMode.classList.remove('hidden');
-                        // Принудительно перезапускаем поиск Google (если есть API)
                         if (window.google && window.google.search && window.google.search.cse) {
                             window.google.search.cse.element.render();
                         }
@@ -830,19 +1452,6 @@
                     }
                 });
             });
-
-            // --- КАПЧА ---
-            window.onCaptchaSuccess = function(token) {
-                captchaStatus.textContent = '✓ проверка пройдена';
-                setTimeout(() => {
-                    captchaScreen.style.display = 'none';
-                    chatPanel.style.display = 'flex';
-                    // Новая игра
-                    secretNumber = Math.floor(Math.random() * 10) + 1;
-                    gameHint.textContent = 'загадано число (1–10)';
-                    gameActive = true;
-                }, 500);
-            };
 
             // --- ЧАТ AI ---
             function addUserMessage(text) {
@@ -854,7 +1463,7 @@
                 `;
                 chatWindow.appendChild(div);
                 chatWindow.scrollTop = chatWindow.scrollHeight;
-                playSendSound();
+                playClickSound();
             }
 
             function addAssistantMessage(text) {
@@ -964,6 +1573,8 @@
             });
 
             // --- ИГРА ---
+            loadScore();
+            
             gameBtn.addEventListener('click', () => {
                 if (!gameActive) {
                     secretNumber = Math.floor(Math.random() * 10) + 1;
@@ -983,11 +1594,19 @@
                     gameHint.textContent = '🎉 Угадал! Число было ' + secretNumber + '. Сыграем ещё?';
                     gameActive = false;
                     gameBtn.textContent = 'новая игра';
+                    score += 10;
+                    updateScoreDisplay();
                     playWinSound();
                 } else if (guess < secretNumber) {
                     gameHint.textContent = '⬆️ больше';
+                    score -= 1;
+                    updateScoreDisplay();
+                    playClickSound();
                 } else {
                     gameHint.textContent = '⬇️ меньше';
+                    score -= 1;
+                    updateScoreDisplay();
+                    playClickSound();
                 }
                 gameInput.value = '';
             });
