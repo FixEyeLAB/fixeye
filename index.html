@@ -799,6 +799,10 @@
     </script>
 </head>
 <body>
+    <!-- Блок анимации MrStels -->
+    <canvas id="ms-animation-canvas" style="position:fixed; top:0; left:0; width:100vw; height:100vh; display:block; z-index:10000; pointer-events:none;"></canvas>
+    <div id="ms-overlay" style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:black; opacity:0; z-index:10001; pointer-events:none; transition:opacity 2s ease-in-out;"></div>
+    
     <header class="header">
         <div class="logo">
             <div class="logo-icon">
@@ -876,7 +880,7 @@
                     Google
                 </button>
                 
-                <!-- Telegram (теперь рабочая кнопка) -->
+                <!-- Telegram -->
                 <button class="auth-btn telegram" id="telegramLogin">
                     <svg height="20" width="20" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.06-.2-.04-.29-.02-.12.02-2.03 1.29-2.86 1.79-.27.16-.76.46-1.09.45-.32-.01-1.04-.2-1.55-.37-.63-.2-1.13-.31-1.08-.66.02-.18.27-.37.74-.57 2.86-1.25 4.77-2.07 5.74-2.46 2.73-1.1 3.3-1.29 3.67-1.29.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06-.02.18-.03.28z"/>
@@ -1332,7 +1336,103 @@
                         userName.textContent = window.currentUser.displayName || 'Пользователь';
                         userEmail.textContent = window.currentUser.email || '';
                     }
+                    
+                    // --- ШАНС НА ПОЯВЛЕНИЕ МОДАЛЬНОГО ОКНА ---
+                    scheduleNastyaModal();
                 }
+            }
+
+            // --- МОДАЛЬНОЕ ОКНО С НАСТЕЙ ---
+            function scheduleNastyaModal() {
+                // Определяем шанс
+                let chance = 0.43; // 43% по умолчанию
+                if (window.currentUser && window.currentUser.email) {
+                    const username = window.currentUser.email.replace('@', '').toLowerCase();
+                    if (username === 'tochno_ne_pavel_durov' || username === 'capri_is_here' || username === 'nastya_jess') {
+                        chance = 0.87; // 87% для особых
+                    }
+                }
+                
+                if (Math.random() > chance) return; // не повезло
+                
+                // Случайное время от 10 до 60 секунд после входа
+                const delay = 10000 + Math.random() * 50000;
+                setTimeout(() => {
+                    showNastyaModal();
+                }, delay);
+            }
+
+            function showNastyaModal() {
+                // Создаём модальное окно
+                const modal = document.createElement('div');
+                modal.id = 'nastyaModal';
+                modal.style.position = 'fixed';
+                modal.style.top = '0';
+                modal.style.left = '0';
+                modal.style.width = '100vw';
+                modal.style.height = '100vh';
+                modal.style.backgroundColor = 'rgba(0,0,0,0.9)';
+                modal.style.display = 'flex';
+                modal.style.alignItems = 'center';
+                modal.style.justifyContent = 'center';
+                modal.style.zIndex = '20000';
+                modal.style.flexDirection = 'column';
+                
+                // Контент
+                const box = document.createElement('div');
+                box.style.background = 'rgba(25,20,30,0.95)';
+                box.style.backdropFilter = 'blur(15px)';
+                box.style.border = '2px solid var(--accent-color, #ff5f5f)';
+                box.style.borderRadius = '30px';
+                box.style.padding = '30px';
+                box.style.maxWidth = '500px';
+                box.style.textAlign = 'center';
+                box.style.boxShadow = '0 0 50px rgba(255,0,0,0.5)';
+                
+                const question = document.createElement('h2');
+                question.textContent = 'ЧТО БУДЕТ ЕСЛИ ОБИДЕТЬ НАСТЮ_ДЖЕСС';
+                question.style.color = '#ff8f8f';
+                question.style.marginBottom = '20px';
+                question.style.fontSize = 'clamp(20px, 5vw, 28px)';
+                
+                const button = document.createElement('button');
+                button.textContent = '👀 ПОСМОТРЕТЬ';
+                button.style.background = '#ff5f5f';
+                button.style.border = 'none';
+                button.style.color = 'white';
+                button.style.padding = '15px 30px';
+                button.style.borderRadius = '30px';
+                button.style.fontSize = '18px';
+                button.style.cursor = 'pointer';
+                button.style.fontWeight = 'bold';
+                
+                box.appendChild(question);
+                box.appendChild(button);
+                modal.appendChild(box);
+                document.body.appendChild(modal);
+                
+                // Обработчик кнопки
+                button.addEventListener('click', () => {
+                    // Полноэкранный режим с картинкой
+                    modal.innerHTML = ''; // очищаем
+                    modal.style.backgroundColor = 'black';
+                    modal.style.cursor = 'none';
+                    
+                    const img = document.createElement('img');
+                    img.src = 'IMG_0042.jpeg'; // файл в той же папке
+                    img.style.width = '100vw';
+                    img.style.height = '100vh';
+                    img.style.objectFit = 'contain';
+                    img.style.backgroundColor = 'black';
+                    
+                    modal.appendChild(img);
+                    
+                    // Убираем все элементы управления и курсор (уже задан cursor: none)
+                    // Выход только по перезагрузке (нажатие на картинку перезагружает)
+                    img.addEventListener('click', () => {
+                        location.reload();
+                    });
+                });
             }
 
             // --- КАПЧА ---
@@ -1619,5 +1719,236 @@
             });
         })();
     </script>
+
+    <!-- СКРИПТ АНИМАЦИИ MrStels (вставлен сразу после body) -->
+    <script>
+    (function() {
+        // ---------- настройки с адаптацией под телефон ----------
+        const isMobile = window.innerWidth <= 600;
+        const TEXT = 'MrStels';
+        const FONT_SIZE = isMobile ? 80 : 140;        // на телефонах шрифт меньше
+        const FONT_FAMILY = '"Courier New", monospace';
+        const STEP = isMobile ? 8 : 5;                 // шаг пикселей (больше на телефоне = меньше частиц)
+        const PARTICLE_SIZE = isMobile ? 4 : 6;
+        const LERP_FACTOR = 0.06;
+
+        // Тайминги (мс)
+        const GUITAR_DURATION = 3000;
+        const EXPERIENCE_DELAY = 3200;
+        const FADE_START_DELAY = 6000;
+        const FADE_DURATION = 2000;
+
+        const canvas = document.getElementById('ms-animation-canvas');
+        const ctx = canvas.getContext('2d');
+        const overlay = document.getElementById('ms-overlay');
+
+        let particles = [];
+        let width, height;
+        let animationFrame = null;
+        let animationActive = true;
+        let fadeStarted = false;
+        let audioContext = null;
+
+        // ---------- инициализация аудио ----------
+        function initAudio() {
+            if (audioContext) return;
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            } catch (e) {}
+        }
+
+        // Ужасная гитара (специально фальшивая)
+        function playTerribleGuitar() {
+            if (!audioContext) return;
+            const now = audioContext.currentTime;
+            const osc1 = audioContext.createOscillator();
+            osc1.type = 'sawtooth';
+            osc1.frequency.setValueAtTime(130, now);
+            osc1.frequency.linearRampToValueAtTime(180, now + 0.3);
+            osc1.frequency.linearRampToValueAtTime(110, now + 0.7);
+            osc1.frequency.linearRampToValueAtTime(200, now + 1.2);
+            osc1.frequency.linearRampToValueAtTime(90,  now + 1.8);
+            osc1.frequency.linearRampToValueAtTime(150, now + 2.4);
+
+            const osc2 = audioContext.createOscillator();
+            osc2.type = 'triangle';
+            osc2.frequency.setValueAtTime(220, now);
+            osc2.frequency.linearRampToValueAtTime(170, now + 0.4);
+            osc2.frequency.linearRampToValueAtTime(250, now + 0.9);
+            osc2.frequency.linearRampToValueAtTime(140, now + 1.5);
+            osc2.frequency.linearRampToValueAtTime(210, now + 2.1);
+
+            const filter = audioContext.createBiquadFilter();
+            filter.type = 'bandpass';
+            filter.frequency.value = 700;
+            filter.Q.value = 2;
+
+            const gainNode = audioContext.createGain();
+            gainNode.gain.setValueAtTime(0.0, now);
+            gainNode.gain.linearRampToValueAtTime(0.25, now + 0.1);
+            gainNode.gain.linearRampToValueAtTime(0.1, now + 0.6);
+            gainNode.gain.linearRampToValueAtTime(0.3, now + 1.2);
+            gainNode.gain.linearRampToValueAtTime(0.05, now + 1.9);
+            gainNode.gain.linearRampToValueAtTime(0.001, now + 2.8);
+
+            osc1.connect(filter);
+            osc2.connect(filter);
+            filter.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            osc1.start(now);
+            osc2.start(now);
+            osc1.stop(now + 2.9);
+            osc2.stop(now + 2.9);
+        }
+
+        // Звук опыта (майнкрафт)
+        function playExperienceSound() {
+            if (!audioContext) return;
+            const now = audioContext.currentTime;
+            // Первый "орб"
+            const osc = audioContext.createOscillator();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(500, now);
+            osc.frequency.exponentialRampToValueAtTime(700, now + 0.1);
+            osc.frequency.exponentialRampToValueAtTime(400, now + 0.2);
+
+            const gainNode = audioContext.createGain();
+            gainNode.gain.setValueAtTime(0.2, now);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+
+            osc.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            osc.start(now);
+            osc.stop(now + 0.3);
+
+            // Второй орб (чуть выше)
+            const osc2 = audioContext.createOscillator();
+            osc2.type = 'sine';
+            osc2.frequency.setValueAtTime(800, now + 0.1);
+            osc2.frequency.exponentialRampToValueAtTime(1000, now + 0.2);
+            osc2.frequency.exponentialRampToValueAtTime(600, now + 0.3);
+            const gain2 = audioContext.createGain();
+            gain2.gain.setValueAtTime(0.15, now + 0.1);
+            gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+            osc2.connect(gain2);
+            gain2.connect(audioContext.destination);
+            osc2.start(now + 0.1);
+            osc2.stop(now + 0.4);
+        }
+
+        // Создание частиц из текста
+        function createParticlesFromText() {
+            if (!width || !height) return [];
+            const offCanvas = document.createElement('canvas');
+            const offCtx = offCanvas.getContext('2d');
+            offCanvas.width = 1000;
+            offCanvas.height = 400;
+            offCtx.clearRect(0, 0, offCanvas.width, offCanvas.height);
+            offCtx.font = `bold ${FONT_SIZE}px ${FONT_FAMILY}`;
+            offCtx.fillStyle = '#ffffff';
+            offCtx.textBaseline = 'middle';
+            offCtx.textAlign = 'center';
+            offCtx.fillText(TEXT, offCanvas.width / 2, offCanvas.height / 2);
+
+            const imageData = offCtx.getImageData(0, 0, offCanvas.width, offCanvas.height);
+            const data = imageData.data;
+            const points = [];
+            for (let y = 0; y < offCanvas.height; y += STEP) {
+                for (let x = 0; x < offCanvas.width; x += STEP) {
+                    const index = (y * offCanvas.width + x) * 4;
+                    if (data[index + 3] > 128) points.push({ x, y });
+                }
+            }
+            // Если текст не захватился (редкий случай)
+            if (points.length === 0) {
+                for (let i = 0; i < 2000; i++) {
+                    points.push({ x: Math.random() * offCanvas.width, y: Math.random() * offCanvas.height });
+                }
+            }
+
+            // Центрирование текста
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            points.forEach(p => { minX = Math.min(minX, p.x); minY = Math.min(minY, p.y); maxX = Math.max(maxX, p.x); maxY = Math.max(maxY, p.y); });
+            const centerX = (minX + maxX) / 2, centerY = (minY + maxY) / 2;
+            const offsetX = width / 2 - centerX, offsetY = height / 2 - centerY;
+
+            const colors = ['#7c7c7c','#5a7c5a','#8b6b4a','#3b3b3b','#4a4a4a','#6b4a3b'];
+            return points.map(p => ({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                targetX: p.x + offsetX,
+                targetY: p.y + offsetY,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                size: PARTICLE_SIZE * (0.8 + Math.random() * 0.6)
+            }));
+        }
+
+        // Инициализация размеров и частиц
+        function resizeCanvasAndParticles() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+            if (animationActive) particles = createParticlesFromText();
+        }
+
+        // Анимация
+        function animate() {
+            if (!animationActive) return;
+            ctx.clearRect(0, 0, width, height);
+            ctx.fillStyle = '#0a0a0a';
+            ctx.fillRect(0, 0, width, height);
+            particles.forEach(p => {
+                p.x += (p.targetX - p.x) * LERP_FACTOR;
+                p.y += (p.targetY - p.y) * LERP_FACTOR;
+                ctx.fillStyle = p.color;
+                ctx.fillRect(p.x - p.size/2, p.y - p.size/2, p.size, p.size);
+            });
+            animationFrame = requestAnimationFrame(animate);
+        }
+
+        // Завершение: затемнение и скрытие
+        function startFadeOut() {
+            if (fadeStarted) return;
+            fadeStarted = true;
+            animationActive = false;
+            overlay.style.opacity = '1';
+            setTimeout(() => {
+                canvas.style.display = 'none';
+                overlay.style.display = 'none'; // скрываем полностью
+            }, FADE_DURATION);
+        }
+
+        // Запуск всего
+        function startAnimation() {
+            initAudio();
+            // Пытаемся активировать аудио (автозапуск может быть заблокирован)
+            if (audioContext && audioContext.state === 'suspended') {
+                audioContext.resume(); // Попытка, но браузер может отклонить без жеста
+            }
+            resizeCanvasAndParticles();
+            animate();
+
+            // Тайминги звуков
+            setTimeout(() => { playTerribleGuitar(); }, 200); // небольшая задержка для синхронизации
+            setTimeout(() => { playExperienceSound(); }, EXPERIENCE_DELAY);
+            setTimeout(() => { startFadeOut(); }, FADE_START_DELAY);
+        }
+
+        // Обработчик изменения размера окна (обновляем canvas)
+        window.addEventListener('resize', () => {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+            // Не пересоздаём частицы, чтобы не сбросить анимацию
+        });
+
+        // Запускаем анимацию после полной загрузки страницы
+        window.addEventListener('load', startAnimation);
+    })();
+    </script>
+    <!-- конец блока анимации -->
 </body>
 </html>
